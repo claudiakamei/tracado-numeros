@@ -262,6 +262,8 @@ let digitIdx = 0;           // treino: número escolhido; folha: número da vez
 let strokeIdx = 0, status = "idle", track = null, pointerId = null, penSeen = false;
 let doneInk = [], ink = [], demo = null, errors = 0, sound = true, timer = null, raf = null;
 let sheetInk = [];          // folha: traços dos números já terminados
+let shadows = [];           // traços seguintes acompanhados para conferir a ordem
+const orderText = () => `Ordem errada! Primeiro o traço ${strokeIdx + 1}, depois o ${strokeIdx + 2} ●`;
 let layout = null;          // folha: onde fica cada número
 let stars = {}, sheets = 0;
 try { stars = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { stars = {}; }
@@ -552,9 +554,17 @@ svg.addEventListener("pointerdown", e => {
     const hit = cellAt(p);
     if (hit !== digitIdx) { setMsg(`Agora é o número ${DIGITS[digitIdx].label}. Comece na bolinha ●`); return; }
   }
-  const st = DIGITS[digitIdx].strokes[strokeIdx];
-  const res = beginTrack(st, local(p), track, tol());
-  if (typeof res === "string") { ink.push([p]); fail(ERROR_TEXT[res]); return; }
+  const d = DIGITS[digitIdx], st = d.strokes[strokeIdx], lp = local(p);
+  const res = beginTrack(st, lp, track, tol());
+  // traços que vêm depois e começam aqui também (no 5 os dois traços saem da mesma bolinha)
+  const later = d.strokes.slice(strokeIdx + 1).filter(o => typeof beginTrack(o, lp, null, tol()) !== "string");
+  if (typeof res === "string") {
+    ink.push([p]);
+    fail(later.length && res !== "fora-do-ponto" ? orderText() : ERROR_TEXT[res]);
+    return;
+  }
+  // acompanha em paralelo os traços seguintes: se o aluno for por um deles, a ordem está errada
+  shadows = res.s === 0 ? later.map(o => ({ st: o, tr: beginTrack(o, lp, null, tol()) })) : [];
   try { svg.setPointerCapture(e.pointerId); } catch {}
   pointerId = e.pointerId; track = res; status = "drawing";
   setMsg("Isso! Siga o caminho até a estrelinha ★");
@@ -569,7 +579,10 @@ svg.addEventListener("pointermove", e => {
   for (const ev of evs.length ? evs : [e]) {
     const p = toSvg(ev); if (!p) continue;
     cur.push(p);
-    const err = stepTrack(st, track, local(p), tol());
+    const lp = local(p);
+    for (const sh of shadows) stepTrack(sh.st, sh.tr, lp, tol());
+    if (track.s < 8 && shadows.some(sh => sh.tr.s > 20)) { fail(orderText()); return; }
+    const err = stepTrack(st, track, lp, tol());
     if (err) { fail(ERROR_TEXT[err]); return; }
   }
   render();
