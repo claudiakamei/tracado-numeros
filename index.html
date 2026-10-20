@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="description" content="Treino de traçado dos números de 1 a 10 com caneta no tablet: exemplo animado da bolinha à estrelinha e aviso quando o sentido está errado.">
+<meta name="description" content="Treino de traçado dos números de 1 a 10 com caneta no tablet: exemplo animado da bolinha à estrelinha, aviso quando o sentido está errado e folha do 1 ao 10 em tamanho menor.">
 <meta name="theme-color" content="#1f6fb2">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -17,7 +17,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;800&display=swap">
 <style>
-  /* Layout: uma tela só, como uma folha de exercício — seletor de números no alto, folha grande no centro, botões grandes embaixo */
+  /* Layout: uma tela só, como uma folha de exercício — modos no alto, folha no centro, botões grandes embaixo.
+     Treino: um número grande por vez. Folha: do 1 ao 10 pequenos, lado a lado, como a folha de papel. */
   :root {
     --bg: #eef3f6;          /* mesa */
     --sheet: #ffffff;       /* folha */
@@ -54,6 +55,7 @@
     --info-soft: #1a2b38; --star: #f5c518; color-scheme: dark;
   }
   *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html, body { height: 100%; margin: 0; }
   body {
     background: var(--bg); color: var(--fg); font-family: var(--font-body);
@@ -63,11 +65,20 @@
     padding-top: max(12px, env(safe-area-inset-top, 0px)); padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
     user-select: none; -webkit-user-select: none; touch-action: manipulation; overflow: hidden;
   }
-  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; }
   h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.4rem, 3.2vw, 2.1rem); margin: 0; line-height: 1.1; text-wrap: balance; }
+  .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
   button { font: inherit; color: inherit; cursor: pointer; border-radius: 16px; }
   button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   .soft { background: var(--sheet); border: 2px solid var(--line); padding: 8px 14px; font-weight: 800; }
+  .soft.warn { border-color: var(--err); color: var(--err); }
+  .tabs { display: inline-flex; border: 2px solid var(--line); border-radius: 18px; background: var(--sheet); padding: 3px; gap: 3px; }
+  .tabs button { border: 0; background: none; padding: 7px 14px; font-weight: 800; border-radius: 14px; }
+  .tabs button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+  .tabs button.locked { color: var(--muted); }
+  .tabs button.ready { animation: chama 1.2s ease-in-out infinite; }
+  @keyframes chama { 50% { box-shadow: 0 0 0 4px var(--star); } }
+  .tabs small { font-weight: 600; font-size: 0.75rem; }
   nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
   nav button {
     position: relative; min-width: 3.2rem; padding: 4px 12px; font-family: var(--font-display); font-weight: 800;
@@ -90,38 +101,52 @@
     height: 100%; max-width: 100%; background: var(--sheet); border: 4px solid var(--line); border-radius: 24px;
     touch-action: none; display: block;
   }
+  body.folha svg#sheet { border-radius: 10px; }
   svg#sheet.err { border-color: var(--err); }
   svg#sheet.ok { border-color: var(--ok); }
   footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
   footer button { padding: 12px 20px; font-size: 1.1rem; font-weight: 800; border: 2px solid var(--line); background: var(--sheet); }
   footer .demo { background: var(--demo); border-color: var(--demo); color: #fff; }
   footer .next { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-  #errors { color: var(--muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
-  @media (prefers-reduced-motion: reduce) { .pulse { display: none; } }
+  .count { color: var(--muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+  @media (prefers-reduced-motion: reduce) { .pulse { display: none; } .tabs button.ready { animation: none; box-shadow: 0 0 0 3px var(--star); } }
 </style>
-
 </head>
 <body>
 <header>
   <h1>Traçado de Números 1 ~ 10</h1>
-  <button class="soft" id="sound" aria-pressed="true">Som: ligado</button>
+  <div class="tools">
+    <div class="tabs" role="group" aria-label="Modo">
+      <button id="tab-treino" aria-pressed="true">Treino</button>
+      <button id="tab-folha" aria-pressed="false">Folha 1 ao 10</button>
+    </div>
+    <button class="soft" id="novo">Novo aluno</button>
+    <button class="soft" id="sound" aria-pressed="true">Som: ligado</button>
+  </div>
 </header>
 <nav id="digits" aria-label="Escolher número"></nav>
 <div id="msg" role="status">Veja o exemplo e depois faça você!</div>
 <main><svg id="sheet" xmlns="http://www.w3.org/2000/svg" aria-label="Folha de traçado"></svg></main>
-<footer>
+<footer id="foot-treino">
   <button id="prev">← Anterior</button>
   <button id="demo" class="demo">▶ Ver exemplo</button>
   <button id="clear">Apagar</button>
   <button id="next" class="next">Próximo →</button>
-  <span id="errors">Erros neste número: 0</span>
+  <span class="count" id="errors">Erros neste número: 0</span>
+</footer>
+<footer id="foot-folha" hidden>
+  <button id="sheet-restart">Começar a folha de novo</button>
+  <span class="count" id="sheet-count"></span>
 </footer>
 
 <script>
 // ---------- caminhos e conferência ----------
 // Cada número numa caixa de 100 x 140 (o 10 tem 180 de largura), da bolinha para a estrelinha.
 const H = 140;
-const START_RADIUS = 24, OFF_LINE = 32, BACK_LIMIT = 20, WINDOW_BACK = 60, WINDOW_AHEAD = 45, STEP = 4, END_SLACK = 18;
+const BACK_LIMIT = 20, WINDOW_BACK = 60, WINDOW_AHEAD = 45, STEP = 4, END_SLACK = 18;
+// Tolerâncias (em unidades do desenho): na folha os números são pequenos, então a margem é maior.
+const TOL_TREINO = { start: 24, off: 32 };
+const TOL_FOLHA = { start: 32, off: 42 };
 const PATHS = [
   ["1", 100, ["M50 15 L50 125"]],
   ["2", 100, ["M22 45 C22 10, 80 8, 80 42 C80 62, 60 78, 20 125 L82 125"]],
@@ -182,18 +207,18 @@ function tangentAt(st, s) {
 const startOf = st => st.pts[0], endOf = st => st.pts[st.pts.length - 1];
 
 // Ao encostar a caneta: precisa ser na bolinha (ou, se já começou, onde parou).
-function beginTrack(st, p, prev) {
-  if (prev && prev.s > 0) return dist(p, pointAt(st, prev.s)) <= START_RADIUS ? { ...prev, back: 0, anchor: p } : "fora-do-ponto";
+function beginTrack(st, p, prev, tol = TOL_TREINO) {
+  if (prev && prev.s > 0) return dist(p, pointAt(st, prev.s)) <= tol.start ? { ...prev, back: 0, anchor: p } : "fora-do-ponto";
   const dStart = dist(p, startOf(st)), dEnd = dist(p, endOf(st));
   // no 8 e no 0 a bolinha fica colada na estrelinha: perto da bolinha vale, e o sentido é conferido no caminho
-  const closed = dist(startOf(st), endOf(st)) < START_RADIUS;
-  if (dStart <= START_RADIUS && (dStart <= dEnd || closed)) return { s: 0, back: 0, anchor: p, drawn: 0 };
-  if (dEnd <= START_RADIUS) return "comecou-na-estrela";
+  const closed = dist(startOf(st), endOf(st)) < tol.start;
+  if (dStart <= tol.start && (dStart <= dEnd || closed)) return { s: 0, back: 0, anchor: p, drawn: 0 };
+  if (dEnd <= tol.start) return "comecou-na-estrela";
   return "fora-da-bolinha";
 }
 // A cada movimento: avança pelo caminho e acusa quando o traço volta no sentido contrário.
 // Sair da linha não é erro; só o caminho e o sentido contam.
-function stepTrack(st, tr, to) {
+function stepTrack(st, tr, to, tol = TOL_TREINO) {
   const mx = to.x - tr.anchor.x, my = to.y - tr.anchor.y, moved = Math.hypot(mx, my);
   if (moved < STEP) return null;
   tr.anchor = to; tr.drawn += moved;
@@ -201,7 +226,7 @@ function stepTrack(st, tr, to) {
   let best = -1, bestScore = Infinity, bestKind = "neutro";
   for (let k = lo; k <= hi; k++) {
     const dd = dist(to, st.pts[k]);
-    if (dd > OFF_LINE) continue;
+    if (dd > tol.off) continue;
     const t = tangentAt(st, st.cum[k]), cos = (t.x * mx + t.y * my) / moved;
     const passed = st.cum[k] < tr.s - 12;
     const kind = cos < -0.3 ? "volta" : (cos < 0.6 || passed) ? "neutro" : "segue";
@@ -214,7 +239,7 @@ function stepTrack(st, tr, to) {
   tr.back += moved;
   return tr.back > BACK_LIMIT ? "sentido-errado" : null;
 }
-const reachedEnd = (st, tr) => tr.s >= st.len - END_SLACK || (tr.s >= st.len * 0.6 && dist(tr.anchor, endOf(st)) <= START_RADIUS);
+const reachedEnd = (st, tr, tol = TOL_TREINO) => tr.s >= st.len - END_SLACK || (tr.s >= st.len * 0.6 && dist(tr.anchor, endOf(st)) <= tol.start);
 const wanderedOff = (st, tr) => tr.drawn > Math.max(40, st.len * 0.6) && tr.s < st.len * 0.3;
 
 const ERROR_TEXT = {
@@ -227,14 +252,24 @@ const ERROR_TEXT = {
 
 // ---------- tela ----------
 const NS = "http://www.w3.org/2000/svg";
-const svg = document.getElementById("sheet"), msgEl = document.getElementById("msg"), nav = document.getElementById("digits");
-const errorsEl = document.getElementById("errors"), soundBtn = document.getElementById("sound");
-const STORAGE_KEY = "tracado-estrelas", DEMO_SPEED = 85;
+const $ = id => document.getElementById(id);
+const svg = $("sheet"), msgEl = $("msg"), nav = $("digits"), mainEl = document.querySelector("main");
+const STORAGE_KEY = "tracado-estrelas", SHEETS_KEY = "tracado-folhas", DEMO_SPEED = 85;
 
-let digitIdx = 0, strokeIdx = 0, status = "idle", track = null, pointerId = null, penSeen = false;
+// mode: "treino" (um número grande, com exemplo) ou "folha" (do 1 ao 10 pequenos, sem exemplo)
+let mode = "treino";
+let digitIdx = 0;           // treino: número escolhido; folha: número da vez
+let strokeIdx = 0, status = "idle", track = null, pointerId = null, penSeen = false;
 let doneInk = [], ink = [], demo = null, errors = 0, sound = true, timer = null, raf = null;
-let stars = {};
+let sheetInk = [];          // folha: traços dos números já terminados
+let layout = null;          // folha: onde fica cada número
+let stars = {}, sheets = 0;
 try { stars = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { stars = {}; }
+try { sheets = Number(localStorage.getItem(SHEETS_KEY) || 0) || 0; } catch { sheets = 0; }
+const save = () => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(stars)); localStorage.setItem(SHEETS_KEY, String(sheets)); } catch {} };
+
+const missing = () => DIGITS.filter(d => !stars[d.label]).map(d => d.label);
+const unlocked = () => missing().length === 0;
 
 let audio = null;
 function beep(kind) {
@@ -273,6 +308,23 @@ function setMsg(text, kind) {
   svg.setAttribute("class", kind || "");
 }
 
+// ----- cabeçalho -----
+function renderHeader() {
+  const tF = $("tab-folha"), tT = $("tab-treino");
+  tT.setAttribute("aria-pressed", String(mode === "treino"));
+  tF.setAttribute("aria-pressed", String(mode === "folha"));
+  const falta = missing();
+  tF.classList.toggle("locked", falta.length > 0);
+  tF.classList.toggle("ready", falta.length === 0 && mode === "treino");
+  tF.innerHTML = falta.length ? `Folha 1 ao 10 <small>(faltam ${falta.length})</small>` : "Folha 1 ao 10";
+  document.body.classList.toggle("folha", mode === "folha");
+  nav.hidden = mode !== "treino";
+  $("foot-treino").hidden = mode !== "treino";
+  $("foot-folha").hidden = mode !== "folha";
+  $("sheet-count").textContent = `Erros nesta folha: ${errors} · Folhas completas: ${sheets}`;
+  $("errors").textContent = "Erros neste número: " + errors;
+}
+
 function renderNav() {
   nav.innerHTML = "";
   DIGITS.forEach((d, k) => {
@@ -286,46 +338,124 @@ function renderNav() {
   });
 }
 
+// ----- desenho -----
+const ROUND = { fill: "none", "stroke-linecap": "round", "stroke-linejoin": "round" };
 
-function render() {
-  const d = DIGITS[digitIdx], pad = 14;
-  svg.setAttribute("viewBox", `${-pad} ${-pad} ${d.width + pad * 2} ${H + pad * 2}`);
-  svg.innerHTML = "";
-  const round = { fill: "none", "stroke-linecap": "round", "stroke-linejoin": "round" };
+// guias de um número (faixa, tracejado, bolinhas e estrelinhas) num grupo já posicionado
+function drawGuides(g, d, activeStroke) {
   d.strokes.forEach(st => {
-    el("path", { d: st.d, ...round, stroke: "var(--band)", "stroke-width": 22 }, svg);
-    el("path", { d: st.d, fill: "none", stroke: "var(--dash)", "stroke-width": 1.3, "stroke-dasharray": "3 3" }, svg);
+    el("path", { d: st.d, ...ROUND, stroke: "var(--band)", "stroke-width": 22 }, g);
+    el("path", { d: st.d, fill: "none", stroke: "var(--dash)", "stroke-width": 1.3, "stroke-dasharray": "3 3" }, g);
   });
-  if (demo) {
-    d.strokes.slice(0, demo.stroke + 1).forEach((st, k) => {
-      const pts = st.pts.slice(0, indexAt(st, k < demo.stroke ? st.len : demo.s) + 1);
-      el("polyline", { points: ptsAttr(pts), ...round, stroke: "var(--demo)", "stroke-width": 7 }, svg);
-      if (k === demo.stroke) { const h = pts[pts.length - 1]; el("circle", { cx: h.x, cy: h.y, r: 7, fill: "var(--demo)", stroke: "var(--sheet)", "stroke-width": 2 }, svg); }
-    });
-  }
-  doneInk.flat().forEach(pts => el("polyline", { points: ptsAttr(pts), ...round, stroke: "var(--ok)", "stroke-width": 6 }, svg));
-  const inkColor = status === "error" ? "var(--err)" : status === "success" ? "var(--ok)" : "var(--accent)";
-  ink.forEach(pts => el("polyline", { points: ptsAttr(pts), ...round, stroke: inkColor, "stroke-width": 6 }, svg));
-  d.strokes.forEach((st, k) => {
+  return () => d.strokes.forEach((st, k) => {
     const a = startOf(st), b = endOf(st);
-    const g = el("g", { "pointer-events": "none" }, svg);
-    if (k === strokeIdx && status !== "demo" && status !== "success" && !(track && track.s > 0)) {
-      const c = el("circle", { class: "pulse", cx: a.x, cy: a.y, r: 9, fill: "none", stroke: "var(--ok)", "stroke-width": 2 }, g);
+    const m = el("g", { "pointer-events": "none" }, g);
+    if (k === activeStroke) {
+      const c = el("circle", { class: "pulse", cx: a.x, cy: a.y, r: 9, fill: "none", stroke: "var(--ok)", "stroke-width": 2 }, m);
       el("animate", { attributeName: "r", values: "7;13;7", dur: "1.2s", repeatCount: "indefinite" }, c);
       el("animate", { attributeName: "opacity", values: "1;0.3;1", dur: "1.2s", repeatCount: "indefinite" }, c);
     }
-    el("path", { d: starPath(b.x, b.y, 6.5), fill: "var(--mark)" }, g);
-    el("circle", { cx: a.x, cy: a.y, r: 4.5, fill: "var(--mark)" }, g);
+    el("path", { d: starPath(b.x, b.y, 6.5), fill: "var(--mark)" }, m);
+    el("circle", { cx: a.x, cy: a.y, r: 4.5, fill: "var(--mark)" }, m);
     if (d.strokes.length > 1) {
       // o 5 começa os dois traços na mesma bolinha: o número do 2º traço vai para o outro lado
       const shared = d.strokes.slice(0, k).some(o => dist(startOf(o), a) < 6);
-      const t = el("text", { x: a.x + (shared ? 4 : -11), y: a.y - 6, "font-size": 9, "font-weight": 800, fill: "var(--accent)", "font-family": "var(--font-body)" }, g);
+      const t = el("text", { x: a.x + (shared ? 4 : -11), y: a.y - 6, "font-size": 9, "font-weight": 800, fill: "var(--accent)", "font-family": "var(--font-body)" }, m);
       t.textContent = String(k + 1);
     }
   });
-  errorsEl.textContent = "Erros neste número: " + errors;
 }
 
+function drawInk(parent) {
+  doneInk.flat().forEach(pts => el("polyline", { points: ptsAttr(pts), ...ROUND, stroke: "var(--ok)", "stroke-width": 6 }, parent));
+  const inkColor = status === "error" ? "var(--err)" : status === "success" ? "var(--ok)" : "var(--accent)";
+  ink.forEach(pts => el("polyline", { points: ptsAttr(pts), ...ROUND, stroke: inkColor, "stroke-width": 6 }, parent));
+}
+
+const waitingStart = () => status !== "demo" && status !== "success" && !(track && track.s > 0);
+
+function render() {
+  renderHeader();
+  svg.innerHTML = "";
+  if (mode === "treino") renderTreino(); else renderFolha();
+}
+
+function renderTreino() {
+  const d = DIGITS[digitIdx], pad = 14;
+  svg.style.width = svg.style.height = "";
+  svg.setAttribute("viewBox", `${-pad} ${-pad} ${d.width + pad * 2} ${H + pad * 2}`);
+  const g = el("g", {}, svg);
+  const marks = drawGuides(g, d, waitingStart() ? strokeIdx : -1);
+  if (demo) {
+    d.strokes.slice(0, demo.stroke + 1).forEach((st, k) => {
+      const pts = st.pts.slice(0, indexAt(st, k < demo.stroke ? st.len : demo.s) + 1);
+      el("polyline", { points: ptsAttr(pts), ...ROUND, stroke: "var(--demo)", "stroke-width": 7 }, svg);
+      if (k === demo.stroke) { const h = pts[pts.length - 1]; el("circle", { cx: h.x, cy: h.y, r: 7, fill: "var(--demo)", stroke: "var(--sheet)", "stroke-width": 2 }, svg); }
+    });
+  }
+  drawInk(svg);
+  marks();
+}
+
+// Folha: as células ficam lado a lado como na folha de papel, quebrando em mais linhas se a tela for estreita.
+const CELL_PAD = 10, CELL_H = H + CELL_PAD * 2;
+const cellW = d => d.width + CELL_PAD * 2;
+function computeLayout() {
+  const W = Math.max(200, mainEl.clientWidth - 8), Hh = Math.max(150, mainEl.clientHeight - 8);
+  const total = DIGITS.reduce((s, d) => s + cellW(d), 0);
+  const rowsFor = limit => {
+    const rows = [[]]; let x = 0;
+    DIGITS.forEach((d, i) => {
+      if (x + cellW(d) > limit && rows[rows.length - 1].length) { rows.push([]); x = 0; }
+      rows[rows.length - 1].push(i); x += cellW(d);
+    });
+    return rows;
+  };
+  // px por unidade: o número fica com ~105px de altura, perto do tamanho da folha de papel
+  let k = 0.75, rows;
+  for (;;) {
+    rows = rowsFor(W / k);
+    // equilibra as linhas (evita uma linha cheia e outra com um número só)
+    for (let lim = total / rows.length; lim <= W / k; lim += 10) {
+      const r = rowsFor(lim);
+      if (r.length <= rows.length) { rows = r; break; }
+    }
+    if (rows.length * CELL_H * k <= Hh || k <= 0.3) break;
+    k -= 0.05;
+  }
+  const cells = []; let width = 0;
+  rows.forEach((row, r) => {
+    let x = 0;
+    row.forEach(i => {
+      const w = cellW(DIGITS[i]);
+      cells[i] = { x, y: r * CELL_H, w, h: CELL_H, ox: x + CELL_PAD, oy: r * CELL_H + CELL_PAD };
+      x += w;
+    });
+    width = Math.max(width, x);
+  });
+  layout = { k, cells, width, height: rows.length * CELL_H };
+}
+
+function renderFolha() {
+  if (!layout) computeLayout();
+  const { k, cells, width, height } = layout;
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.style.width = width * k + "px";
+  svg.style.height = height * k + "px";
+  let marks = [];
+  DIGITS.forEach((d, i) => {
+    const c = cells[i];
+    if (i === digitIdx && status !== "success") el("rect", { x: c.x + 2, y: c.y + 2, width: c.w - 4, height: c.h - 4, rx: 8, fill: "var(--info-soft)" }, svg);
+    el("rect", { x: c.x, y: c.y, width: c.w, height: c.h, fill: "none", stroke: "var(--line)", "stroke-width": 1.2 }, svg);
+    const g = el("g", { transform: `translate(${c.ox} ${c.oy})` }, svg);
+    marks.push(drawGuides(g, d, i === digitIdx && waitingStart() ? strokeIdx : -1));
+  });
+  sheetInk.flat().forEach(pts => el("polyline", { points: ptsAttr(pts), ...ROUND, stroke: "var(--ok)", "stroke-width": 6 }, svg));
+  drawInk(svg);
+  marks.forEach(m => m());
+}
+
+// ----- controle -----
 function clearTimers() {
   if (timer) clearTimeout(timer);
   if (raf) cancelAnimationFrame(raf);
@@ -334,6 +464,7 @@ function clearTimers() {
 function resetTrace() { track = null; pointerId = null; strokeIdx = 0; doneInk = []; ink = []; }
 
 function startDemo() {
+  if (mode !== "treino") return;
   clearTimers(); resetTrace();
   status = "demo"; setMsg("Olhe o caminho: da bolinha ● para a estrelinha ★");
   const d = DIGITS[digitIdx];
@@ -361,11 +492,46 @@ function goTo(idx) {
   renderNav(); startDemo();
 }
 
+function setMode(m) {
+  if (m === "folha" && !unlocked()) {
+    setMsg(`Para liberar a folha, treine todos os números. Faltam: ${missing().join(", ")}`);
+    return;
+  }
+  clearTimers(); resetTrace(); demo = null; errors = 0; mode = m;
+  if (m === "folha") {
+    digitIdx = 0; sheetInk = []; layout = null; status = "idle";
+    setMsg("Agora sozinho! Faça do 1 ao 10. Comece na bolinha do 1 ●");
+    render();
+  } else {
+    renderNav(); startDemo();
+  }
+}
+
+function startSheet() {
+  clearTimers(); resetTrace(); errors = 0; digitIdx = 0; sheetInk = []; status = "idle";
+  setMsg("Agora sozinho! Faça do 1 ao 10. Comece na bolinha do 1 ●");
+  render();
+}
+
+// ----- caneta -----
+const tol = () => mode === "folha" ? TOL_FOLHA : TOL_TREINO;
+const offset = () => mode === "folha" ? layout.cells[digitIdx] : { ox: 0, oy: 0 };
+const local = p => { const o = offset(); return { x: p.x - o.ox, y: p.y - o.oy }; };
+
 function toSvg(e) {
   const m = svg.getScreenCTM();
   if (!m) return null;
   const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
   return { x: p.x, y: p.y };
+}
+function cellAt(p) {
+  if (!layout) return -1;
+  return layout.cells.findIndex(c => p.x >= c.x && p.x <= c.x + c.w && p.y >= c.y && p.y <= c.y + c.h);
+}
+
+function retryText() {
+  const d = DIGITS[digitIdx], what = mode === "folha" ? ` do ${d.label}` : "";
+  return d.strokes.length > 1 ? `Tente de novo: comece na bolinha ● do traço ${strokeIdx + 1}${what}` : `Tente de novo: comece na bolinha ●${what}`;
 }
 
 function fail(text) {
@@ -373,11 +539,7 @@ function fail(text) {
   setMsg(text, "err"); beep("erro");
   try { navigator.vibrate && navigator.vibrate(150); } catch {}
   render(); clearTimers();
-  timer = setTimeout(() => {
-    ink = []; status = "idle";
-    setMsg(DIGITS[digitIdx].strokes.length > 1 ? `Tente de novo: comece na bolinha ● do traço ${strokeIdx + 1}` : "Tente de novo: comece na bolinha ●");
-    render();
-  }, 1400);
+  timer = setTimeout(() => { ink = []; status = "idle"; setMsg(retryText()); render(); }, 1400);
 }
 
 svg.addEventListener("pointerdown", e => {
@@ -385,8 +547,13 @@ svg.addEventListener("pointerdown", e => {
   if (e.pointerType === "touch" && penSeen) return; // palma da mão encostando
   if (pointerId !== null || status === "demo" || status === "error" || status === "success") return;
   const p = toSvg(e); if (!p) return;
+  if (mode === "folha") {
+    // na folha, encostar em outro número só lembra qual é a vez (não conta como erro)
+    const hit = cellAt(p);
+    if (hit !== digitIdx) { setMsg(`Agora é o número ${DIGITS[digitIdx].label}. Comece na bolinha ●`); return; }
+  }
   const st = DIGITS[digitIdx].strokes[strokeIdx];
-  const res = beginTrack(st, p, track);
+  const res = beginTrack(st, local(p), track, tol());
   if (typeof res === "string") { ink.push([p]); fail(ERROR_TEXT[res]); return; }
   try { svg.setPointerCapture(e.pointerId); } catch {}
   pointerId = e.pointerId; track = res; status = "drawing";
@@ -402,7 +569,7 @@ svg.addEventListener("pointermove", e => {
   for (const ev of evs.length ? evs : [e]) {
     const p = toSvg(ev); if (!p) continue;
     cur.push(p);
-    const err = stepTrack(st, track, p);
+    const err = stepTrack(st, track, local(p), tol());
     if (err) { fail(ERROR_TEXT[err]); return; }
   }
   render();
@@ -413,7 +580,7 @@ function onUp(e) {
   pointerId = null;
   if (!track) return;
   const d = DIGITS[digitIdx], st = d.strokes[strokeIdx];
-  if (!reachedEnd(st, track)) {
+  if (!reachedEnd(st, track, tol())) {
     if (wanderedOff(st, track)) { fail(ERROR_TEXT["outro-caminho"]); return; }
     status = "idle"; setMsg("Continue de onde parou até a estrelinha ★"); render(); return;
   }
@@ -422,25 +589,67 @@ function onUp(e) {
     strokeIdx++; status = "idle";
     setMsg(`Muito bem! Agora o traço ${strokeIdx + 1}: comece na bolinha ●`); beep("ok"); render(); return;
   }
+  if (mode === "folha") return finishSheetDigit();
+  const wasLocked = !unlocked();
   status = "success"; setMsg("Parabéns! Traçado certinho! ★", "ok"); beep("fim");
-  stars[d.label] = (stars[d.label] || 0) + 1;
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(stars)); } catch {}
+  stars[d.label] = (stars[d.label] || 0) + 1; save();
   renderNav(); render(); clearTimers();
+  if (wasLocked && unlocked()) {
+    // treinou todos: passa para a folha do 1 ao 10
+    timer = setTimeout(() => { setMsg("Você treinou todos os números! Agora a folha do 1 ao 10 ★", "ok"); timer = setTimeout(() => setMode("folha"), 2200); }, 1500);
+    return;
+  }
   timer = setTimeout(() => { resetTrace(); status = "idle"; setMsg("De novo! Comece na bolinha ●"); render(); }, 1800);
 }
+
+function finishSheetDigit() {
+  sheetInk.push(...doneInk);
+  doneInk = []; strokeIdx = 0; track = null;
+  if (digitIdx < DIGITS.length - 1) {
+    digitIdx++; status = "idle";
+    setMsg(`Muito bem! Agora o número ${DIGITS[digitIdx].label}: comece na bolinha ●`); beep("ok"); render(); return;
+  }
+  status = "success"; sheets++; save(); beep("fim");
+  setMsg(errors ? `Parabéns! Você fez do 1 ao 10 sozinho! ★ (${errors} ${errors === 1 ? "erro" : "erros"})` : "Parabéns! Você fez do 1 ao 10 sozinho, sem nenhum erro! ★", "ok");
+  render();
+}
+
 svg.addEventListener("pointerup", onUp);
 svg.addEventListener("pointercancel", onUp);
 svg.addEventListener("contextmenu", e => e.preventDefault());
 
-document.getElementById("demo").onclick = startDemo;
-document.getElementById("prev").onclick = () => goTo(digitIdx - 1);
-document.getElementById("next").onclick = () => goTo(digitIdx + 1);
-document.getElementById("clear").onclick = () => { clearTimers(); resetTrace(); demo = null; status = "idle"; setMsg("Comece na bolinha ●"); render(); };
-soundBtn.onclick = () => {
+$("demo").onclick = startDemo;
+$("prev").onclick = () => goTo(digitIdx - 1);
+$("next").onclick = () => goTo(digitIdx + 1);
+$("clear").onclick = () => { clearTimers(); resetTrace(); demo = null; status = "idle"; setMsg("Comece na bolinha ●"); render(); };
+$("sheet-restart").onclick = startSheet;
+$("tab-treino").onclick = () => { if (mode !== "treino") setMode("treino"); };
+$("tab-folha").onclick = () => { if (mode !== "folha") setMode("folha"); };
+$("sound").onclick = () => {
   sound = !sound;
-  soundBtn.textContent = sound ? "Som: ligado" : "Som: desligado";
-  soundBtn.setAttribute("aria-pressed", String(sound));
+  $("sound").textContent = sound ? "Som: ligado" : "Som: desligado";
+  $("sound").setAttribute("aria-pressed", String(sound));
 };
+
+// Novo aluno: zera as estrelinhas deste tablet (pede confirmação com um segundo toque)
+let novoTimer = null;
+$("novo").onclick = () => {
+  const b = $("novo");
+  if (!b.classList.contains("warn")) {
+    b.classList.add("warn"); b.textContent = "Toque de novo para zerar";
+    novoTimer = setTimeout(() => { b.classList.remove("warn"); b.textContent = "Novo aluno"; }, 3000);
+    return;
+  }
+  clearTimeout(novoTimer); b.classList.remove("warn"); b.textContent = "Novo aluno";
+  stars = {}; sheets = 0; save();
+  mode = "treino"; setMode("treino"); goTo(0);
+};
+
+let resizeTimer = null;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { if (mode === "folha" && pointerId === null) { layout = null; render(); } }, 150);
+});
 
 // mantém a tela do tablet acesa enquanto o aluno treina
 async function keepAwake() { try { await navigator.wakeLock.request("screen"); } catch {} }
