@@ -111,6 +111,22 @@
   footer .demo { background: var(--demo); border-color: var(--demo); color: #fff; }
   footer .next { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
   .count { color: var(--muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+  /* celular: cabeçalho e botões compactos e a fileira de letras numa faixa só, que rola para o lado,
+     para sobrar espaço para a letra */
+  @media (max-width: 640px), (max-height: 520px) {
+    body { gap: 6px; padding-top: max(8px, env(safe-area-inset-top, 0px)); padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); }
+    h1 { font-size: 1.15rem; }
+    header { gap: 6px; }
+    .tools { gap: 6px; }
+    .soft { padding: 5px 9px; font-size: 0.85rem; }
+    .tabs button { padding: 5px 9px; font-size: 0.85rem; }
+    nav, body.letras nav { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; padding: 8px 2px 2px; gap: 6px; scrollbar-width: none; }
+    nav button, body.letras nav button { flex: none; min-width: 2.4rem; padding: 0 8px; font-size: 1.25rem; }
+    #msg { font-size: 0.95rem; padding: 6px 10px; }
+    footer { gap: 6px; }
+    footer button { padding: 8px 12px; font-size: 0.95rem; }
+    .count { font-size: 0.8rem; }
+  }
   @media (prefers-reduced-motion: reduce) { .pulse { display: none; } .tabs button.ready { animation: none; box-shadow: 0 0 0 3px var(--star); } }
 </style>
 </head>
@@ -143,6 +159,9 @@
 </footer>
 <footer id="foot-folha" hidden>
   <button id="say-folha">🔊 Ouvir</button>
+  <button id="page-prev" hidden>◀</button>
+  <span class="count" id="page-label" hidden></span>
+  <button id="page-next" hidden>▶</button>
   <button id="sheet-restart">Apagar a folha</button>
   <span class="count" id="sheet-count"></span>
 </footer>
@@ -250,10 +269,11 @@ const SETS = {
   letras: { G: LETTERS, title: "Traçado de Letras a ~ z", folha: "Folha a ~ z", one: "letra", the: l => `a letra ${l}`, other: "outra letra", here: "nesta letra",
             all: "todas as letras", done: "todas as letras", pick: "uma letra" },
 };
-// Nome falado de cada número e letra (voz do próprio tablet, em português)
+// Nome falado de cada número e letra (voz do próprio tablet, em português). As vogais vão como "ah", "eh"…:
+// algumas vozes de celular leem um "á" sozinho como "a com acento agudo".
 const NAMES = { 1: "um", 2: "dois", 3: "três", 4: "quatro", 5: "cinco", 6: "seis", 7: "sete", 8: "oito", 9: "nove", 10: "dez",
-  a: "á", b: "bê", c: "cê", d: "dê", e: "é", f: "éfe", g: "gê", h: "agá", i: "í", j: "jota", k: "cá", l: "éle", m: "ême",
-  n: "êne", o: "ó", p: "pê", q: "quê", r: "érre", s: "ésse", t: "tê", u: "ú", v: "vê", w: "dáblio", x: "xis", y: "ípsilon", z: "zê" };
+  a: "ah", b: "bê", c: "cê", d: "dê", e: "eh", f: "éfe", g: "gê", h: "agá", i: "ih", j: "jota", k: "cá", l: "éle", m: "ême",
+  n: "êne", o: "oh", p: "pê", q: "quê", r: "érre", s: "ésse", t: "tê", u: "uh", v: "vê", w: "dáblio", x: "xis", y: "ípsilon", z: "zê" };
 
 const indexAt = (st, s) => Math.min(st.pts.length - 1, Math.max(0, Math.round(s / st.len * (st.pts.length - 1))));
 const pointAt = (st, s) => st.pts[indexAt(st, s)];
@@ -330,6 +350,7 @@ let bridge = null;          // traçado contínuo: passando de um traço para o 
 let lifting = false;        // o traço já chegou na estrelinha; espera tirar a caneta
 const orderText = () => `Ordem errada! Primeiro o traço ${strokeIdx + 1}, depois o ${strokeIdx + 2} ●`;
 let layout = null;          // folha: onde fica cada número
+let page = 0;               // folha: página mostrada (no celular a folha pode não caber numa tela só)
 // estrelinhas por número/letra (os rótulos não se repetem entre os conjuntos) e folhas completas por conjunto
 let stars = {}, sheets = {};
 try { stars = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { stars = {}; }
@@ -415,6 +436,13 @@ function renderHeader() {
   $("foot-folha").hidden = mode !== "folha";
   $("sheet-count").textContent = `Feitos: ${Object.keys(sheetInk).length} de ${G.length} · Erros nesta folha: ${errors} · Folhas completas: ${sheets[kind] || 0}`;
   $("errors").textContent = `Erros ${T.here}: ${errors}`;
+  const paged = mode === "folha" && layout && layout.pages > 1;
+  for (const id of ["page-prev", "page-label", "page-next"]) $(id).hidden = !paged;
+  if (paged) {
+    $("page-label").textContent = `Página ${page + 1} de ${layout.pages}`;
+    $("page-prev").disabled = page === 0;
+    $("page-next").disabled = page === layout.pages - 1;
+  }
 }
 
 function renderNav() {
@@ -474,6 +502,7 @@ function drawInk(parent) {
 const waitingStart = () => status !== "demo" && status !== "success" && !(track && track.s > 0);
 
 function render() {
+  if (mode === "folha" && !layout) computeLayout(); // o cabeçalho precisa saber se a folha tem páginas
   renderHeader();
   svg.innerHTML = "";
   if (mode === "treino") renderTreino(); else renderFolha();
@@ -511,7 +540,9 @@ function computeLayout() {
     });
     return rows;
   };
-  // px por unidade: o número fica com ~105px de altura, perto do tamanho da folha de papel
+  // px por unidade: o número fica com ~105px de altura, perto do tamanho da folha de papel.
+  // Nunca diminui abaixo de K_MIN (no celular as letras ficariam minúsculas): se não couber, a folha vira páginas.
+  const K_MIN = 0.55;
   let k = 0.75, rows;
   for (;;) {
     rows = rowsFor(W / k);
@@ -520,20 +551,27 @@ function computeLayout() {
       const r = rowsFor(lim);
       if (r.length <= rows.length) { rows = r; break; }
     }
-    if (rows.length * CELL_H * k <= Hh || k <= 0.3) break;
-    k -= 0.05;
+    if (rows.length * CELL_H * k <= Hh || k <= K_MIN + 1e-9) break;
+    k = Math.max(K_MIN, k - 0.05);
   }
+  // se a tela for estreita demais até para uma célula, encolhe só o necessário para caber na largura
+  const widest = Math.max(...rows.map(row => row.reduce((s, i) => s + cellW(G[i]), 0)));
+  k = Math.min(k, W / widest);
+  const perPage = Math.max(1, Math.min(rows.length, Math.floor(Hh / (CELL_H * k))));
   const cells = []; let width = 0;
   rows.forEach((row, r) => {
     let x = 0;
+    const y = (r % perPage) * CELL_H;
     row.forEach(i => {
       const w = cellW(G[i]);
-      cells[i] = { x, y: r * CELL_H, w, h: CELL_H, ox: x + CELL_PAD - G[i].x0, oy: r * CELL_H + CELL_PAD };
+      cells[i] = { x, y, w, h: CELL_H, ox: x + CELL_PAD - G[i].x0, oy: y + CELL_PAD, page: Math.floor(r / perPage) };
       x += w;
     });
     width = Math.max(width, x);
   });
-  layout = { k, cells, width, height: rows.length * CELL_H };
+  const pages = Math.ceil(rows.length / perPage);
+  page = Math.min(page, pages - 1);
+  layout = { k, cells, width, height: perPage * CELL_H, pages };
 }
 
 function renderFolha() {
@@ -545,6 +583,7 @@ function renderFolha() {
   let marks = [];
   G.forEach((d, i) => {
     const c = cells[i];
+    if (c.page !== page) return; // outra página da folha
     if (i in sheetInk) el("rect", { x: c.x + 2, y: c.y + 2, width: c.w - 4, height: c.h - 4, rx: 8, fill: "var(--ok-soft)" }, svg);
     else if (i === digitIdx && status !== "success") el("rect", { x: c.x + 2, y: c.y + 2, width: c.w - 4, height: c.h - 4, rx: 8, fill: "var(--info-soft)" }, svg);
     el("rect", { x: c.x, y: c.y, width: c.w, height: c.h, fill: "none", stroke: "var(--line)", "stroke-width": 1.2 }, svg);
@@ -553,7 +592,9 @@ function renderFolha() {
   });
   // traços já terminados ficam guardados relativos à sua célula: continuam no lugar se a tela mudar de tamanho
   for (const i in sheetInk) {
-    const c = cells[i], g = el("g", { transform: `translate(${c.ox} ${c.oy})` }, svg);
+    const c = cells[i];
+    if (c.page !== page) continue;
+    const g = el("g", { transform: `translate(${c.ox} ${c.oy})` }, svg);
     sheetInk[i].flat().forEach(pts => el("polyline", { points: ptsAttr(pts), ...ROUND, stroke: "var(--ok)", "stroke-width": 6 }, g));
   }
   drawInk(svg);
@@ -601,7 +642,7 @@ function goTo(idx) {
 function setMode(m) {
   clearTimers(); resetTrace(); demo = null; errors = 0; mode = m;
   if (m === "folha") {
-    digitIdx = 0; sheetInk = {}; sheetCelebrated = false; layout = null; status = "idle";
+    digitIdx = 0; sheetInk = {}; sheetCelebrated = false; layout = null; page = 0; status = "idle";
     setMsg(`Agora sozinho! Escolha ${T.pick} da folha e comece na bolinha ●`);
     render();
   } else {
@@ -610,7 +651,7 @@ function setMode(m) {
 }
 
 function startSheet() {
-  clearTimers(); resetTrace(); errors = 0; digitIdx = 0; sheetInk = {}; sheetCelebrated = false; status = "idle";
+  clearTimers(); resetTrace(); errors = 0; digitIdx = 0; sheetInk = {}; sheetCelebrated = false; page = 0; status = "idle";
   setMsg(`Agora sozinho! Escolha ${T.pick} da folha e comece na bolinha ●`);
   render();
 }
@@ -618,7 +659,7 @@ function startSheet() {
 // troca entre números e letras, mantendo o modo (treino ou folha)
 function setKind(k) {
   if (k === kind) return;
-  kind = k; T = SETS[k]; G = T.G; digitIdx = 0; layout = null;
+  kind = k; T = SETS[k]; G = T.G; digitIdx = 0; layout = null; page = 0;
   try { localStorage.setItem(KIND_KEY, k); } catch {}
   setMode(mode);
 }
@@ -636,7 +677,7 @@ function toSvg(e) {
 }
 function cellAt(p) {
   if (!layout) return -1;
-  return layout.cells.findIndex(c => p.x >= c.x && p.x <= c.x + c.w && p.y >= c.y && p.y <= c.y + c.h);
+  return layout.cells.findIndex(c => c.page === page && p.x >= c.x && p.x <= c.x + c.w && p.y >= c.y && p.y <= c.y + c.h);
 }
 
 function retryText() {
@@ -789,6 +830,16 @@ $("prev").onclick = () => goTo(digitIdx - 1);
 $("next").onclick = () => goTo(digitIdx + 1);
 $("clear").onclick = () => { clearTimers(); resetTrace(); demo = null; status = "idle"; setMsg("Comece na bolinha ●"); render(); };
 $("sheet-restart").onclick = startSheet;
+// folha em páginas (celular): trocar de página deixa para depois o traço que estava pela metade
+const goPage = delta => {
+  if (!layout || pointerId !== null) return;
+  page = Math.max(0, Math.min(layout.pages - 1, page + delta));
+  resetTrace(); status = "idle";
+  setMsg(`Escolha ${T.pick} desta página e comece na bolinha ●`);
+  render();
+};
+$("page-prev").onclick = () => goPage(-1);
+$("page-next").onclick = () => goPage(1);
 $("tab-treino").onclick = () => { if (mode !== "treino") setMode("treino"); };
 $("tab-folha").onclick = () => { if (mode !== "folha") setMode("folha"); };
 $("sound").onclick = () => {
