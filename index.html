@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="description" content="Treino de traçado dos números de 1 a 10 com caneta no tablet: exemplo animado da bolinha à estrelinha, aviso quando o sentido está errado e folha do 1 ao 10 em tamanho menor.">
+<meta name="description" content="Treino de traçado de números (1 a 10) e letras minúsculas (a a z) com caneta no tablet: exemplo animado da bolinha à estrelinha, aviso de sentido e ordem errados, nome falado e folha em tamanho menor.">
 <meta name="theme-color" content="#1f6fb2">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,7 +15,7 @@
 <title>Traçado de Números 1 ~ 10</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Comic+Neue:wght@700&family=Nunito:wght@600;800&display=swap">
 <style>
   /* Layout: uma tela só, como uma folha de exercício — modos no alto, folha no centro, botões grandes embaixo.
      Treino: um número grande por vez. Folha: do 1 ao 10 pequenos, lado a lado, como a folha de papel. */
@@ -85,6 +85,9 @@
     font-variant-numeric: tabular-nums;
   }
   nav button[aria-current="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  /* letras: botões menores, na mesma fonte da letra que o aluno traça */
+  body.letras nav { gap: 6px; }
+  body.letras nav button { font-family: "Comic Neue", "Comic Sans MS", cursive; font-weight: 700; min-width: 2.6rem; padding: 0 8px; font-size: clamp(1.3rem, 2.6vw, 1.7rem); }
   nav .badge {
     position: absolute; top: -9px; right: -9px; background: var(--star); color: #1d2a33; border-radius: 999px;
     font-family: var(--font-body); font-size: 0.72rem; padding: 1px 6px; line-height: 1.4;
@@ -113,8 +116,12 @@
 </head>
 <body>
 <header>
-  <h1>Traçado de Números 1 ~ 10</h1>
+  <h1 id="title">Traçado de Números 1 ~ 10</h1>
   <div class="tools">
+    <div class="tabs" role="group" aria-label="Números ou letras">
+      <button id="kind-numeros" aria-pressed="true">Números</button>
+      <button id="kind-letras" aria-pressed="false">Letras</button>
+    </div>
     <div class="tabs" role="group" aria-label="Modo">
       <button id="tab-treino" aria-pressed="true">Treino</button>
       <button id="tab-folha" aria-pressed="false">Folha 1 ao 10</button>
@@ -129,11 +136,13 @@
 <footer id="foot-treino">
   <button id="prev">← Anterior</button>
   <button id="demo" class="demo">▶ Ver exemplo</button>
+  <button id="say">🔊 Ouvir</button>
   <button id="clear">Apagar</button>
   <button id="next" class="next">Próximo →</button>
   <span class="count" id="errors">Erros neste número: 0</span>
 </footer>
 <footer id="foot-folha" hidden>
+  <button id="say-folha">🔊 Ouvir</button>
   <button id="sheet-restart">Apagar a folha</button>
   <span class="count" id="sheet-count"></span>
 </footer>
@@ -195,7 +204,54 @@ function buildStroke(d) {
   }
   return { d, pts, cum, len };
 }
-const DIGITS = PATHS.map(([label, width, strokes]) => ({ label, width, strokes: strokes.map(buildStroke) }));
+const DIGITS = PATHS.map(([label, width, strokes]) => ({ label, x0: 0, width, height: H, strokes: strokes.map(buildStroke) }));
+
+// Letras minúsculas: o desenho cinza é a própria fonte Comic Neue (Bold, tamanho 150, linha de base y=115,
+// altura-x de y=40 a 115) e os caminhos seguem o meio do traço da fonte, na ordem escolar da letra bastão.
+// [letra, borda esquerda, borda direita, traços]; um traço "M x y L x y+1" é um pingo (i, j): basta encostar.
+const LETTER_FONT = { family: '"Comic Neue", "Comic Sans MS", "Comic Sans", cursive', size: 150, base: 115, height: 150 };
+const LETTER_PATHS = [
+  ["a", 0, 70, ["M51 52 C44 45, 14 46, 13 78 C12 104, 30 112, 40 109 C48 107, 54 102, 58 96", "M59 46 L59 110"]],
+  ["b", 0, 79, ["M17.5 21 L17.5 110", "M19 58 C26 48, 38 47, 46 47 C60 48, 66 62, 66 78 C66 96, 56 108, 42 108 C32 108, 24 106, 19 103"]],
+  ["c", 0, 74, ["M57 54 C52 47, 44 47, 38 47 C22 47, 13 62, 13 78 C13 96, 24 109, 38 109 C48 109, 56 104, 61 96"]],
+  ["d", 0, 74, ["M51 52 C44 45, 14 46, 13 78 C12 104, 30 111, 40 109 C48 107, 55 102, 59 96", "M61 22 L61 110"]],
+  ["e", 0, 74, ["M20 80 L57 62 C56 52, 47 47, 38 47 C22 47, 13 62, 13 79 C13 96, 25 109, 40 109 C49 109, 56 104, 61 97"]],
+  ["f", -4, 58, ["M50 21 C40 21, 35 25, 35 34 L35 110", "M2 48 L47 48"]],
+  ["g", 0, 74, ["M51 52 C44 45, 14 46, 14 77 C14 101, 30 108, 40 106 C48 104, 55 99, 59 93", "M61 46 L61 118 C61 130, 50 134, 38 133 C30 133, 24 132, 18 131"]],
+  ["h", 0, 74, ["M17.5 21 L17.5 110", "M19 66 C24 54, 32 47, 42 47 C56 47, 62 56, 62 72 L62 110"]],
+  ["i", 0, 34, ["M18.5 46 L18.5 110", "M18.5 24 L18.5 25"]],
+  ["j", -16, 36, ["M21 46 L21 118 C21 132, 14 137, 6 136 C2 135, -2 132, -4 128", "M22 22 L22 23"]],
+  ["k", 0, 77, ["M17.5 21 L17.5 110", "M60 46 L28 72 L64 108"]],
+  ["l", 0, 32, ["M17.5 21 L17.5 110"]],
+  ["m", 0, 114, ["M17.5 47 L17.5 110", "M19 62 C22 52, 30 47, 38 47 C52 47, 62 52, 62 66 L62 110", "M63 62 C66 52, 74 47, 82 47 C96 47, 102 54, 102 68 L102 110"]],
+  ["n", 0, 77, ["M17.5 47 L17.5 110", "M19 64 C23 53, 31 47, 42 47 C58 47, 65 56, 65 72 L65 110"]],
+  ["o", 0, 77, ["M38.75 48.5 C24.5 48.5, 13 61.8, 13 78.25 C13 94.7, 24.5 108, 38.75 108 C53 108, 64.5 94.7, 64.5 78.25 C64.5 61.8, 53 48.5, 40 48.5"]],
+  ["p", 0, 77, ["M17.5 47 L17.5 136", "M19 60 C25 50, 34 47, 44 47 C58 47, 65 60, 65 77 C65 96, 56 108, 42 108 C33 108, 25 106, 19 102"]],
+  ["q", 0, 72, ["M51 52 C44 45, 14 46, 13 78 C12 104, 30 111, 40 109 C48 107, 54 102, 58 96", "M59 45 L59 136"]],
+  ["r", 0, 65, ["M17.5 47 L17.5 110", "M19 66 C22 54, 30 47, 39 47 C46 47, 51 50, 53 57"]],
+  ["s", 0, 65, ["M53 60 C52 52, 44 48, 36 48 C24 48, 16 53, 16 62 C16 72, 28 75, 38 78 C48 81, 56 86, 56 95 C56 104, 47 109, 36 109 C24 109, 15 104, 12 96"]],
+  ["t", -6, 56, ["M23.5 22 L23.5 110", "M1 48.5 L47 48.5"]],
+  ["u", 0, 72, ["M17 47 L17 90 C17 104, 22 109, 32 109 C42 109, 50 104, 57 98", "M60 47 L60 110"]],
+  ["v", -4, 67, ["M7 47 L31.5 108 L56 47"]],
+  ["w", 0, 93, ["M9 47 L23 107 L42.5 50 L61 107 L80 47"]],
+  ["x", -4, 77, ["M12.5 47.5 L62.5 107.5", "M65 47.5 L5 107.5"]],
+  ["y", 0, 74, ["M6 46.5 L36 100", "M61 46.5 L21 137.5"]],
+  ["z", 0, 67, ["M4 49 L55 49 L7 105 L58 105"]],
+];
+const LETTERS = LETTER_PATHS.map(([label, x0, width, strokes]) => ({ label, x0, width, height: LETTER_FONT.height, font: true, strokes: strokes.map(buildStroke) }));
+const isTap = st => st.len < 4; // pingo do i e do j
+
+// Os dois conjuntos do aplicativo e os textos de cada um
+const SETS = {
+  numeros: { G: DIGITS, title: "Traçado de Números 1 ~ 10", folha: "Folha 1 ao 10", one: "número", the: l => `o ${l}`, other: "outro número", here: "neste número",
+             all: "todos os números", done: "do 1 ao 10", pick: "um número" },
+  letras: { G: LETTERS, title: "Traçado de Letras a ~ z", folha: "Folha a ~ z", one: "letra", the: l => `a letra ${l}`, other: "outra letra", here: "nesta letra",
+            all: "todas as letras", done: "todas as letras", pick: "uma letra" },
+};
+// Nome falado de cada número e letra (voz do próprio tablet, em português)
+const NAMES = { 1: "um", 2: "dois", 3: "três", 4: "quatro", 5: "cinco", 6: "seis", 7: "sete", 8: "oito", 9: "nove", 10: "dez",
+  a: "á", b: "bê", c: "cê", d: "dê", e: "é", f: "éfe", g: "gê", h: "agá", i: "í", j: "jota", k: "cá", l: "éle", m: "ême",
+  n: "êne", o: "ó", p: "pê", q: "quê", r: "érre", s: "ésse", t: "tê", u: "ú", v: "vê", w: "dáblio", x: "xis", y: "ípsilon", z: "zê" };
 
 const indexAt = (st, s) => Math.min(st.pts.length - 1, Math.max(0, Math.round(s / st.len * (st.pts.length - 1))));
 const pointAt = (st, s) => st.pts[indexAt(st, s)];
@@ -253,7 +309,12 @@ const ERROR_TEXT = {
 const NS = "http://www.w3.org/2000/svg";
 const $ = id => document.getElementById(id);
 const svg = $("sheet"), msgEl = $("msg"), nav = $("digits"), mainEl = document.querySelector("main");
-const STORAGE_KEY = "tracado-estrelas", SHEETS_KEY = "tracado-folhas", DEMO_SPEED = 85;
+const STORAGE_KEY = "tracado-estrelas", SHEETS_KEY = "tracado-folhas", KIND_KEY = "tracado-conjunto", DEMO_SPEED = 85;
+
+// conjunto em uso: números ou letras (lembra o último escolhido neste tablet)
+let kind = "numeros";
+try { if (SETS[localStorage.getItem(KIND_KEY)]) kind = localStorage.getItem(KIND_KEY); } catch {}
+let T = SETS[kind], G = T.G;
 
 // mode: "treino" (um número grande, com exemplo) ou "folha" (do 1 ao 10 pequenos, sem exemplo)
 let mode = "treino";
@@ -265,12 +326,32 @@ let sheetCelebrated = false; // folha: já comemorou os 10 feitos (repetir um n�
 let shadows = [];           // traços seguintes acompanhados para conferir a ordem
 const orderText = () => `Ordem errada! Primeiro o traço ${strokeIdx + 1}, depois o ${strokeIdx + 2} ●`;
 let layout = null;          // folha: onde fica cada número
-let stars = {}, sheets = 0;
+// estrelinhas por número/letra (os rótulos não se repetem entre os conjuntos) e folhas completas por conjunto
+let stars = {}, sheets = {};
 try { stars = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { stars = {}; }
-try { sheets = Number(localStorage.getItem(SHEETS_KEY) || 0) || 0; } catch { sheets = 0; }
-const save = () => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(stars)); localStorage.setItem(SHEETS_KEY, String(sheets)); } catch {} };
+try {
+  const s = JSON.parse(localStorage.getItem(SHEETS_KEY) || "{}");
+  sheets = typeof s === "number" ? { numeros: s } : s || {}; // versão antiga guardava só o número de folhas de números
+} catch { sheets = {}; }
+const save = () => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(stars)); localStorage.setItem(SHEETS_KEY, JSON.stringify(sheets)); } catch {} };
 
-const missing = () => DIGITS.filter(d => !stars[d.label]).map(d => d.label);
+// voz do tablet falando o nome do número ou da letra
+function speak(label) {
+  try {
+    const s = window.speechSynthesis;
+    if (!s) return false;
+    s.cancel();
+    const u = new SpeechSynthesisUtterance(NAMES[label] || String(label));
+    u.lang = "pt-BR"; u.rate = 0.85;
+    const voices = s.getVoices(), low = v => (v.lang || "").replace("_", "-").toLowerCase();
+    u.voice = voices.find(v => low(v).startsWith("pt-br")) || voices.find(v => low(v).startsWith("pt")) || null;
+    s.speak(u);
+    return true;
+  } catch { return false; }
+}
+const sayCurrent = () => { if (!speak(G[digitIdx].label)) setMsg("Este aparelho não tem voz para falar o nome."); };
+
+const missing = () => G.filter(d => !stars[d.label]).map(d => d.label);
 const allTrained = () => missing().length === 0; // treinou todos os números (a folha fica sempre liberada)
 
 let audio = null;
@@ -317,22 +398,28 @@ function renderHeader() {
   tF.setAttribute("aria-pressed", String(mode === "folha"));
   const falta = missing();
   tF.classList.toggle("ready", falta.length === 0 && mode === "treino");
-  tF.textContent = "Folha 1 ao 10";
+  tF.textContent = T.folha;
+  $("title").textContent = T.title;
+  document.title = T.title;
+  $("kind-numeros").setAttribute("aria-pressed", String(kind === "numeros"));
+  $("kind-letras").setAttribute("aria-pressed", String(kind === "letras"));
   document.body.classList.toggle("folha", mode === "folha");
+  document.body.classList.toggle("letras", kind === "letras");
   nav.hidden = mode !== "treino";
+  nav.setAttribute("aria-label", "Escolher " + T.one);
   $("foot-treino").hidden = mode !== "treino";
   $("foot-folha").hidden = mode !== "folha";
-  $("sheet-count").textContent = `Feitos: ${Object.keys(sheetInk).length} de 10 · Erros nesta folha: ${errors} · Folhas completas: ${sheets}`;
-  $("errors").textContent = "Erros neste número: " + errors;
+  $("sheet-count").textContent = `Feitos: ${Object.keys(sheetInk).length} de ${G.length} · Erros nesta folha: ${errors} · Folhas completas: ${sheets[kind] || 0}`;
+  $("errors").textContent = `Erros ${T.here}: ${errors}`;
 }
 
 function renderNav() {
   nav.innerHTML = "";
-  DIGITS.forEach((d, k) => {
+  G.forEach((d, k) => {
     const b = document.createElement("button");
     b.textContent = d.label;
     b.setAttribute("aria-current", k === digitIdx ? "true" : "false");
-    b.setAttribute("aria-label", "Número " + d.label);
+    b.setAttribute("aria-label", (kind === "letras" ? "Letra " : "Número ") + d.label);
     if (stars[d.label]) { const s = document.createElement("span"); s.className = "badge"; s.textContent = "★" + stars[d.label]; b.appendChild(s); }
     b.onclick = () => goTo(k);
     nav.appendChild(b);
@@ -344,8 +431,15 @@ const ROUND = { fill: "none", "stroke-linecap": "round", "stroke-linejoin": "rou
 
 // guias de um número (faixa, tracejado, bolinhas e estrelinhas) num grupo já posicionado
 function drawGuides(g, d, activeStroke) {
+  if (d.font) {
+    // a letra cinza é a própria fonte (Comic Neue), um pouco engrossada para servir de faixa
+    const t = el("text", { x: 0, y: LETTER_FONT.base, "font-family": LETTER_FONT.family, "font-weight": 700, "font-size": LETTER_FONT.size,
+      fill: "var(--band)", stroke: "var(--band)", "stroke-width": 7, "stroke-linejoin": "round" }, g);
+    t.textContent = d.label;
+  }
   d.strokes.forEach(st => {
-    el("path", { d: st.d, ...ROUND, stroke: "var(--band)", "stroke-width": 22 }, g);
+    if (isTap(st)) return;
+    if (!d.font) el("path", { d: st.d, ...ROUND, stroke: "var(--band)", "stroke-width": 22 }, g);
     el("path", { d: st.d, fill: "none", stroke: "var(--dash)", "stroke-width": 1.3, "stroke-dasharray": "3 3" }, g);
   });
   return () => d.strokes.forEach((st, k) => {
@@ -356,11 +450,11 @@ function drawGuides(g, d, activeStroke) {
       el("animate", { attributeName: "r", values: "7;13;7", dur: "1.2s", repeatCount: "indefinite" }, c);
       el("animate", { attributeName: "opacity", values: "1;0.3;1", dur: "1.2s", repeatCount: "indefinite" }, c);
     }
-    el("path", { d: starPath(b.x, b.y, 6.5), fill: "var(--mark)" }, m);
+    if (!isTap(st)) el("path", { d: starPath(b.x, b.y, 6.5), fill: "var(--mark)" }, m); // o pingo só tem a bolinha
     el("circle", { cx: a.x, cy: a.y, r: 4.5, fill: "var(--mark)" }, m);
     if (d.strokes.length > 1) {
-      // o 5 começa os dois traços na mesma bolinha: o número do 2º traço vai para o outro lado
-      const shared = d.strokes.slice(0, k).some(o => dist(startOf(o), a) < 6);
+      // bolinhas juntas (o 5; o a, d, g, q): o número do 2º traço vai para o outro lado
+      const shared = d.strokes.slice(0, k).some(o => dist(startOf(o), a) < 14);
       const t = el("text", { x: a.x + (shared ? 4 : -11), y: a.y - 6, "font-size": 9, "font-weight": 800, fill: "var(--accent)", "font-family": "var(--font-body)" }, m);
       t.textContent = String(k + 1);
     }
@@ -382,9 +476,9 @@ function render() {
 }
 
 function renderTreino() {
-  const d = DIGITS[digitIdx], pad = 14;
+  const d = G[digitIdx], pad = 14;
   svg.style.width = svg.style.height = "";
-  svg.setAttribute("viewBox", `${-pad} ${-pad} ${d.width + pad * 2} ${H + pad * 2}`);
+  svg.setAttribute("viewBox", `${d.x0 - pad} ${-pad} ${d.width - d.x0 + pad * 2} ${d.height + pad * 2}`);
   const g = el("g", {}, svg);
   const marks = drawGuides(g, d, waitingStart() ? strokeIdx : -1);
   if (demo) {
@@ -399,14 +493,15 @@ function renderTreino() {
 }
 
 // Folha: as células ficam lado a lado como na folha de papel, quebrando em mais linhas se a tela for estreita.
-const CELL_PAD = 10, CELL_H = H + CELL_PAD * 2;
-const cellW = d => d.width + CELL_PAD * 2;
+const CELL_PAD = 10;
+const cellW = d => d.width - d.x0 + CELL_PAD * 2;
 function computeLayout() {
+  const CELL_H = G[0].height + CELL_PAD * 2;
   const W = Math.max(200, mainEl.clientWidth - 8), Hh = Math.max(150, mainEl.clientHeight - 8);
-  const total = DIGITS.reduce((s, d) => s + cellW(d), 0);
+  const total = G.reduce((s, d) => s + cellW(d), 0);
   const rowsFor = limit => {
     const rows = [[]]; let x = 0;
-    DIGITS.forEach((d, i) => {
+    G.forEach((d, i) => {
       if (x + cellW(d) > limit && rows[rows.length - 1].length) { rows.push([]); x = 0; }
       rows[rows.length - 1].push(i); x += cellW(d);
     });
@@ -428,8 +523,8 @@ function computeLayout() {
   rows.forEach((row, r) => {
     let x = 0;
     row.forEach(i => {
-      const w = cellW(DIGITS[i]);
-      cells[i] = { x, y: r * CELL_H, w, h: CELL_H, ox: x + CELL_PAD, oy: r * CELL_H + CELL_PAD };
+      const w = cellW(G[i]);
+      cells[i] = { x, y: r * CELL_H, w, h: CELL_H, ox: x + CELL_PAD - G[i].x0, oy: r * CELL_H + CELL_PAD };
       x += w;
     });
     width = Math.max(width, x);
@@ -444,7 +539,7 @@ function renderFolha() {
   svg.style.width = width * k + "px";
   svg.style.height = height * k + "px";
   let marks = [];
-  DIGITS.forEach((d, i) => {
+  G.forEach((d, i) => {
     const c = cells[i];
     if (i in sheetInk) el("rect", { x: c.x + 2, y: c.y + 2, width: c.w - 4, height: c.h - 4, rx: 8, fill: "var(--ok-soft)" }, svg);
     else if (i === digitIdx && status !== "success") el("rect", { x: c.x + 2, y: c.y + 2, width: c.w - 4, height: c.h - 4, rx: 8, fill: "var(--info-soft)" }, svg);
@@ -452,8 +547,11 @@ function renderFolha() {
     const g = el("g", { transform: `translate(${c.ox} ${c.oy})` }, svg);
     marks.push(drawGuides(g, d, i === digitIdx && waitingStart() ? strokeIdx : -1));
   });
-  // cada número guarda traços → pedaços → pontos
-  Object.values(sheetInk).flat(2).forEach(pts => el("polyline", { points: ptsAttr(pts), ...ROUND, stroke: "var(--ok)", "stroke-width": 6 }, svg));
+  // traços já terminados ficam guardados relativos à sua célula: continuam no lugar se a tela mudar de tamanho
+  for (const i in sheetInk) {
+    const c = cells[i], g = el("g", { transform: `translate(${c.ox} ${c.oy})` }, svg);
+    sheetInk[i].flat().forEach(pts => el("polyline", { points: ptsAttr(pts), ...ROUND, stroke: "var(--ok)", "stroke-width": 6 }, g));
+  }
   drawInk(svg);
   marks.forEach(m => m());
 }
@@ -470,7 +568,8 @@ function startDemo() {
   if (mode !== "treino") return;
   clearTimers(); resetTrace();
   status = "demo"; setMsg("Olhe o caminho: da bolinha ● para a estrelinha ★");
-  const d = DIGITS[digitIdx];
+  const d = G[digitIdx];
+  if (sound) speak(d.label);
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
     demo = { stroke: d.strokes.length - 1, s: d.strokes[d.strokes.length - 1].len }; render();
     timer = setTimeout(endDemo, 1500); return;
@@ -491,7 +590,7 @@ function endDemo() { demo = null; status = "idle"; setMsg("Agora é sua vez! Com
 
 function goTo(idx) {
   clearTimers(); errors = 0; demo = null;
-  digitIdx = (idx + DIGITS.length) % DIGITS.length;
+  digitIdx = (idx + G.length) % G.length;
   renderNav(); startDemo();
 }
 
@@ -499,7 +598,7 @@ function setMode(m) {
   clearTimers(); resetTrace(); demo = null; errors = 0; mode = m;
   if (m === "folha") {
     digitIdx = 0; sheetInk = {}; sheetCelebrated = false; layout = null; status = "idle";
-    setMsg("Agora sozinho! Escolha um número da folha e comece na bolinha ●");
+    setMsg(`Agora sozinho! Escolha ${T.pick} da folha e comece na bolinha ●`);
     render();
   } else {
     renderNav(); startDemo();
@@ -508,8 +607,16 @@ function setMode(m) {
 
 function startSheet() {
   clearTimers(); resetTrace(); errors = 0; digitIdx = 0; sheetInk = {}; sheetCelebrated = false; status = "idle";
-  setMsg("Agora sozinho! Escolha um número da folha e comece na bolinha ●");
+  setMsg(`Agora sozinho! Escolha ${T.pick} da folha e comece na bolinha ●`);
   render();
+}
+
+// troca entre números e letras, mantendo o modo (treino ou folha)
+function setKind(k) {
+  if (k === kind) return;
+  kind = k; T = SETS[k]; G = T.G; digitIdx = 0; layout = null;
+  try { localStorage.setItem(KIND_KEY, k); } catch {}
+  setMode(mode);
 }
 
 // ----- caneta -----
@@ -529,7 +636,7 @@ function cellAt(p) {
 }
 
 function retryText() {
-  const d = DIGITS[digitIdx], what = mode === "folha" ? ` do ${d.label}` : "";
+  const d = G[digitIdx], what = mode === "folha" ? ` do ${d.label}` : "";
   return d.strokes.length > 1 ? `Tente de novo: comece na bolinha ● do traço ${strokeIdx + 1}${what}` : `Tente de novo: comece na bolinha ●${what}`;
 }
 
@@ -553,10 +660,14 @@ svg.addEventListener("pointerdown", e => {
     if (hit in sheetInk) { delete sheetInk[hit]; digitIdx = hit; resetTrace(); } // número já feito: apaga e faz de novo
     else if (hit !== digitIdx) { digitIdx = hit; resetTrace(); } // o que tinha começado no outro número fica para depois
   }
-  const d = DIGITS[digitIdx], st = d.strokes[strokeIdx], lp = local(p);
+  const d = G[digitIdx], st = d.strokes[strokeIdx], lp = local(p);
   const res = beginTrack(st, lp, track, tol());
   // traços que vêm depois e começam aqui também (no 5 os dois traços saem da mesma bolinha)
   const later = d.strokes.slice(strokeIdx + 1).filter(o => typeof beginTrack(o, lp, null, tol()) !== "string");
+  // encostou mais perto da bolinha de um traço que vem depois (ex.: o pingo do i antes da perninha)
+  const jumpedAhead = !(track && track.s > 0) && later.some(o =>
+    dist(startOf(o), startOf(st)) >= 12 && dist(lp, startOf(o)) < dist(lp, startOf(st)));
+  if (jumpedAhead) { ink.push([p]); fail(orderText()); return; }
   if (typeof res === "string") {
     ink.push([p]);
     fail(later.length && res !== "fora-do-ponto" ? orderText() : ERROR_TEXT[res]);
@@ -572,7 +683,7 @@ svg.addEventListener("pointerdown", e => {
 
 svg.addEventListener("pointermove", e => {
   if (pointerId !== e.pointerId || !track) return;
-  const st = DIGITS[digitIdx].strokes[strokeIdx];
+  const st = G[digitIdx].strokes[strokeIdx];
   const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
   const cur = ink[ink.length - 1];
   for (const ev of evs.length ? evs : [e]) {
@@ -591,7 +702,7 @@ function onUp(e) {
   if (pointerId !== e.pointerId) return;
   pointerId = null;
   if (!track) return;
-  const d = DIGITS[digitIdx], st = d.strokes[strokeIdx];
+  const d = G[digitIdx], st = d.strokes[strokeIdx];
   if (!reachedEnd(st, track, tol())) {
     if (wanderedOff(st, track)) { fail(ERROR_TEXT["outro-caminho"]); return; }
     status = "idle"; setMsg("Continue de onde parou até a estrelinha ★"); render(); return;
@@ -608,7 +719,7 @@ function onUp(e) {
   renderNav(); render(); clearTimers();
   if (firstTimeAll && allTrained()) {
     // treinou todos: passa para a folha do 1 ao 10
-    timer = setTimeout(() => { setMsg("Você treinou todos os números! Agora a folha do 1 ao 10 ★", "ok"); timer = setTimeout(() => setMode("folha"), 2200); }, 1500);
+    timer = setTimeout(() => { setMsg(`Você treinou ${T.all}! Agora a folha ★`, "ok"); timer = setTimeout(() => setMode("folha"), 2200); }, 1500);
     return;
   }
   timer = setTimeout(() => { resetTrace(); status = "idle"; setMsg("De novo! Comece na bolinha ●"); render(); }, 1800);
@@ -616,17 +727,20 @@ function onUp(e) {
 
 function finishSheetDigit() {
   // cada número é livre: o aluno pode fazer só um, vários, ou repetir o mesmo quantas vezes quiser
-  const label = DIGITS[digitIdx].label;
-  sheetInk[digitIdx] = doneInk;
+  const label = G[digitIdx].label;
+  const o = layout.cells[digitIdx]; // guarda relativo à célula (ver renderFolha)
+  sheetInk[digitIdx] = doneInk.map(stroke => stroke.map(piece => piece.map(p => ({ x: p.x - o.ox, y: p.y - o.oy }))));
   doneInk = []; strokeIdx = 0; track = null; status = "idle";
-  const falta = DIGITS.map((d, i) => i).filter(i => !(i in sheetInk));
+  const falta = G.map((d, i) => i).filter(i => !(i in sheetInk));
   if (!falta.length && !sheetCelebrated) {
-    sheetCelebrated = true; sheets++; save(); beep("fim");
-    setMsg((errors ? `Parabéns! Você fez do 1 ao 10 sozinho! ★ (${errors} ${errors === 1 ? "erro" : "erros"})` : "Parabéns! Você fez do 1 ao 10 sozinho, sem nenhum erro! ★") + " Pode repetir qualquer número.", "ok");
+    sheetCelebrated = true; sheets[kind] = (sheets[kind] || 0) + 1; save(); beep("fim");
+    setMsg((errors ? `Parabéns! Você fez ${T.done} sozinho! ★ (${errors} ${errors === 1 ? "erro" : "erros"})` : `Parabéns! Você fez ${T.done} sozinho, sem nenhum erro! ★`) + ` Pode repetir ${kind === "letras" ? "qualquer letra" : "qualquer número"}.`, "ok");
     render(); return;
   }
   beep("ok");
-  setMsg(`Muito bem! ★ Repita o ${label} ou escolha outro número.` + (falta.length ? ` Faltam: ${falta.map(i => DIGITS[i].label).join(", ")}` : ""), "ok");
+  if (sound) setTimeout(() => speak(label), 350);
+  const faltaTxt = !falta.length ? "" : falta.length <= 6 ? ` Faltam: ${falta.map(i => G[i].label).join(", ")}` : ` Faltam ${falta.length}.`;
+  setMsg(`Muito bem! ★ Repita ${T.the(label)} ou escolha ${T.other}.` + faltaTxt, "ok");
   render();
 }
 
@@ -635,6 +749,10 @@ svg.addEventListener("pointercancel", onUp);
 svg.addEventListener("contextmenu", e => e.preventDefault());
 
 $("demo").onclick = startDemo;
+$("say").onclick = sayCurrent;
+$("say-folha").onclick = sayCurrent;
+$("kind-numeros").onclick = () => setKind("numeros");
+$("kind-letras").onclick = () => setKind("letras");
 $("prev").onclick = () => goTo(digitIdx - 1);
 $("next").onclick = () => goTo(digitIdx + 1);
 $("clear").onclick = () => { clearTimers(); resetTrace(); demo = null; status = "idle"; setMsg("Comece na bolinha ●"); render(); };
@@ -657,14 +775,15 @@ $("novo").onclick = () => {
     return;
   }
   clearTimeout(novoTimer); b.classList.remove("warn"); b.textContent = "Novo aluno";
-  stars = {}; sheets = 0; save();
+  stars = {}; sheets = {}; save();
   mode = "treino"; setMode("treino"); goTo(0);
 };
 
 let resizeTimer = null;
 window.addEventListener("resize", () => {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => { if (mode === "folha" && pointerId === null) { layout = null; render(); } }, 150);
+  // o traço pela metade é refeito (as posições mudam); os já terminados continuam no lugar
+  resizeTimer = setTimeout(() => { if (mode === "folha" && pointerId === null) { layout = null; resetTrace(); render(); } }, 150);
 });
 
 // mantém a tela do tablet acesa enquanto o aluno treina

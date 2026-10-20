@@ -1,7 +1,7 @@
 {
-  "name": "Traçado de Números 1 ~ 10",
+  "name": "Traçado de Números e Letras",
   "short_name": "Traçado",
-  "description": "Treino de traçado dos números de 1 a 10 com caneta no tablet.",
+  "description": "Treino de traçado de números (1 a 10) e letras minúsculas com caneta no tablet.",
   "lang": "pt-BR",
   "start_url": "./",
   "scope": "./",
