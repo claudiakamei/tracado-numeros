@@ -2,7 +2,7 @@
 
 Treino de traçado dos números de 1 a 10 para tablet com caneta. O sistema mostra o caminho certo (da bolinha para a estrelinha) e avisa quando o aluno faz o traço no sentido errado. Sair da linha não é erro.
 
-Endereço: https://tracado.kumonmaruipe.com
+Endereço: https://tracado.kameiflow.com
 
 - `index.html`: o aplicativo inteiro (desenhos dos números, conferência do sentido e a tela).
 - `sw.js`: guarda o aplicativo no tablet para funcionar sem internet. Ao publicar uma mudança, aumente `VERSAO`.
