@@ -452,7 +452,8 @@ function renderFolha() {
     const g = el("g", { transform: `translate(${c.ox} ${c.oy})` }, svg);
     marks.push(drawGuides(g, d, i === digitIdx && waitingStart() ? strokeIdx : -1));
   });
-  Object.values(sheetInk).flat().forEach(pts => el("polyline", { points: ptsAttr(pts), ...ROUND, stroke: "var(--ok)", "stroke-width": 6 }, svg));
+  // cada número guarda traços → pedaços → pontos
+  Object.values(sheetInk).flat(2).forEach(pts => el("polyline", { points: ptsAttr(pts), ...ROUND, stroke: "var(--ok)", "stroke-width": 6 }, svg));
   drawInk(svg);
   marks.forEach(m => m());
 }
