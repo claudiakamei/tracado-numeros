@@ -1,6 +1,6 @@
 // Guarda o aplicativo no tablet para funcionar sem internet.
 // Ao publicar uma mudança, aumente a VERSAO para os tablets baixarem a versão nova.
-const VERSAO = "tracado-v5";
+const VERSAO = "tracado-v6";
 const ARQUIVOS = [
   "./",
   "index.html",

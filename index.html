@@ -134,7 +134,7 @@
   <span class="count" id="errors">Erros neste número: 0</span>
 </footer>
 <footer id="foot-folha" hidden>
-  <button id="sheet-restart">Começar a folha de novo</button>
+  <button id="sheet-restart">Apagar a folha</button>
   <span class="count" id="sheet-count"></span>
 </footer>
 
@@ -261,6 +261,7 @@ let digitIdx = 0;           // treino: número escolhido; folha: número da vez
 let strokeIdx = 0, status = "idle", track = null, pointerId = null, penSeen = false;
 let doneInk = [], ink = [], demo = null, errors = 0, sound = true, timer = null, raf = null;
 let sheetInk = {};          // folha: traços de cada número já terminado (por posição), em qualquer ordem
+let sheetCelebrated = false; // folha: já comemorou os 10 feitos (repetir um número não conta outra folha)
 let shadows = [];           // traços seguintes acompanhados para conferir a ordem
 const orderText = () => `Ordem errada! Primeiro o traço ${strokeIdx + 1}, depois o ${strokeIdx + 2} ●`;
 let layout = null;          // folha: onde fica cada número
@@ -496,7 +497,7 @@ function goTo(idx) {
 function setMode(m) {
   clearTimers(); resetTrace(); demo = null; errors = 0; mode = m;
   if (m === "folha") {
-    digitIdx = 0; sheetInk = {}; layout = null; status = "idle";
+    digitIdx = 0; sheetInk = {}; sheetCelebrated = false; layout = null; status = "idle";
     setMsg("Agora sozinho! Escolha um número da folha e comece na bolinha ●");
     render();
   } else {
@@ -505,7 +506,7 @@ function setMode(m) {
 }
 
 function startSheet() {
-  clearTimers(); resetTrace(); errors = 0; digitIdx = 0; sheetInk = {}; status = "idle";
+  clearTimers(); resetTrace(); errors = 0; digitIdx = 0; sheetInk = {}; sheetCelebrated = false; status = "idle";
   setMsg("Agora sozinho! Escolha um número da folha e comece na bolinha ●");
   render();
 }
@@ -542,14 +543,14 @@ function fail(text) {
 svg.addEventListener("pointerdown", e => {
   if (e.pointerType === "pen") penSeen = true;
   if (e.pointerType === "touch" && penSeen) return; // palma da mão encostando
-  if (pointerId !== null || status === "demo" || status === "error" || status === "success") return;
+  if (pointerId !== null || status === "demo" || status === "error" || (status === "success" && mode === "treino")) return;
   const p = toSvg(e); if (!p) return;
   if (mode === "folha") {
     // na folha o aluno escolhe o número, em qualquer ordem, começando a traçar nele
     const hit = cellAt(p);
     if (hit < 0) return;
-    if (hit in sheetInk) { setMsg(`O ${DIGITS[hit].label} já está pronto ★ Escolha outro número`); return; }
-    if (hit !== digitIdx) { digitIdx = hit; resetTrace(); } // o que tinha começado no outro número fica para depois
+    if (hit in sheetInk) { delete sheetInk[hit]; digitIdx = hit; resetTrace(); } // número já feito: apaga e faz de novo
+    else if (hit !== digitIdx) { digitIdx = hit; resetTrace(); } // o que tinha começado no outro número fica para depois
   }
   const d = DIGITS[digitIdx], st = d.strokes[strokeIdx], lp = local(p);
   const res = beginTrack(st, lp, track, tol());
@@ -613,16 +614,18 @@ function onUp(e) {
 }
 
 function finishSheetDigit() {
+  // cada número é livre: o aluno pode fazer só um, vários, ou repetir o mesmo quantas vezes quiser
+  const label = DIGITS[digitIdx].label;
   sheetInk[digitIdx] = doneInk;
-  doneInk = []; strokeIdx = 0; track = null;
+  doneInk = []; strokeIdx = 0; track = null; status = "idle";
   const falta = DIGITS.map((d, i) => i).filter(i => !(i in sheetInk));
-  if (falta.length) {
-    // sugere o próximo que falta, mas o aluno pode escolher qualquer um
-    digitIdx = falta.find(i => i > digitIdx) ?? falta[0]; status = "idle";
-    setMsg(`Muito bem! Escolha outro número. Faltam: ${falta.map(i => DIGITS[i].label).join(", ")}`); beep("ok"); render(); return;
+  if (!falta.length && !sheetCelebrated) {
+    sheetCelebrated = true; sheets++; save(); beep("fim");
+    setMsg((errors ? `Parabéns! Você fez do 1 ao 10 sozinho! ★ (${errors} ${errors === 1 ? "erro" : "erros"})` : "Parabéns! Você fez do 1 ao 10 sozinho, sem nenhum erro! ★") + " Pode repetir qualquer número.", "ok");
+    render(); return;
   }
-  status = "success"; sheets++; save(); beep("fim");
-  setMsg(errors ? `Parabéns! Você fez do 1 ao 10 sozinho! ★ (${errors} ${errors === 1 ? "erro" : "erros"})` : "Parabéns! Você fez do 1 ao 10 sozinho, sem nenhum erro! ★", "ok");
+  beep("ok");
+  setMsg(`Muito bem! ★ Repita o ${label} ou escolha outro número.` + (falta.length ? ` Faltam: ${falta.map(i => DIGITS[i].label).join(", ")}` : ""), "ok");
   render();
 }
 
