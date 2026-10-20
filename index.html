@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="Treino de traçado dos números de 1 a 10 com caneta no tablet: exemplo animado da bolinha à estrelinha e aviso quando o sentido está errado.">
+<meta name="theme-color" content="#1f6fb2">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Traçado">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Traçado de Números 1 ~ 10</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;800&display=swap">
+<style>
+  /* Layout: uma tela só, como uma folha de exercício — seletor de números no alto, folha grande no centro, botões grandes embaixo */
+  :root {
+    --bg: #eef3f6;          /* mesa */
+    --sheet: #ffffff;       /* folha */
+    --fg: #1d2a33;
+    --muted: #5d6f7b;
+    --line: #cfd9df;
+    --band: #e4e9ec;        /* faixa cinza do traçado */
+    --dash: #8a99a3;
+    --mark: #15212a;        /* bolinha e estrelinha */
+    --accent: #1f6fb2;      /* azul do traço do aluno */
+    --accent-ink: #ffffff;
+    --demo: #f08a24;        /* laranja do exemplo */
+    --ok: #1d9a52;
+    --ok-soft: #dff3e7;
+    --err: #d23a2f;
+    --err-soft: #fbe3e1;
+    --info-soft: #e3eef7;
+    --star: #f5c518;
+    --font-display: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+    --font-body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #11181d; --sheet: #1b252c; --fg: #e8eef2; --muted: #9db0bc; --line: #2f3d47;
+      --band: #2a363f; --dash: #7f919c; --mark: #f1f5f8; --accent: #5aa7e8; --accent-ink: #0d1a24;
+      --demo: #f59a3c; --ok: #4cc77f; --ok-soft: #173326; --err: #f0675c; --err-soft: #3a1c1a;
+      --info-soft: #1a2b38; --star: #f5c518; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #11181d; --sheet: #1b252c; --fg: #e8eef2; --muted: #9db0bc; --line: #2f3d47;
+    --band: #2a363f; --dash: #7f919c; --mark: #f1f5f8; --accent: #5aa7e8; --accent-ink: #0d1a24;
+    --demo: #f59a3c; --ok: #4cc77f; --ok-soft: #173326; --err: #f0675c; --err-soft: #3a1c1a;
+    --info-soft: #1a2b38; --star: #f5c518; color-scheme: dark;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--fg); font-family: var(--font-body);
+    display: flex; flex-direction: column; gap: 10px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-top: max(12px, env(safe-area-inset-top, 0px)); padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    user-select: none; -webkit-user-select: none; touch-action: manipulation; overflow: hidden;
+  }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.4rem, 3.2vw, 2.1rem); margin: 0; line-height: 1.1; text-wrap: balance; }
+  button { font: inherit; color: inherit; cursor: pointer; border-radius: 16px; }
+  button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .soft { background: var(--sheet); border: 2px solid var(--line); padding: 8px 14px; font-weight: 800; }
+  nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+  nav button {
+    position: relative; min-width: 3.2rem; padding: 4px 12px; font-family: var(--font-display); font-weight: 800;
+    font-size: clamp(1.4rem, 3vw, 1.9rem); line-height: 1.3; background: var(--sheet); border: 2px solid var(--line);
+    font-variant-numeric: tabular-nums;
+  }
+  nav button[aria-current="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  nav .badge {
+    position: absolute; top: -9px; right: -9px; background: var(--star); color: #1d2a33; border-radius: 999px;
+    font-family: var(--font-body); font-size: 0.72rem; padding: 1px 6px; line-height: 1.4;
+  }
+  #msg {
+    text-align: center; font-weight: 800; font-size: clamp(1.05rem, 2.4vw, 1.4rem); padding: 10px 14px; border-radius: 16px;
+    background: var(--info-soft); color: var(--fg); min-height: 1.5em;
+  }
+  #msg.err { background: var(--err-soft); color: var(--err); }
+  #msg.ok { background: var(--ok-soft); color: var(--ok); }
+  main { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+  svg#sheet {
+    height: 100%; max-width: 100%; background: var(--sheet); border: 4px solid var(--line); border-radius: 24px;
+    touch-action: none; display: block;
+  }
+  svg#sheet.err { border-color: var(--err); }
+  svg#sheet.ok { border-color: var(--ok); }
+  footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
+  footer button { padding: 12px 20px; font-size: 1.1rem; font-weight: 800; border: 2px solid var(--line); background: var(--sheet); }
+  footer .demo { background: var(--demo); border-color: var(--demo); color: #fff; }
+  footer .next { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  #errors { color: var(--muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+  @media (prefers-reduced-motion: reduce) { .pulse { display: none; } }
+</style>
+
+</head>
+<body>
+<header>
+  <h1>Traçado de Números 1 ~ 10</h1>
+  <button class="soft" id="sound" aria-pressed="true">Som: ligado</button>
+</header>
+<nav id="digits" aria-label="Escolher número"></nav>
+<div id="msg" role="status">Veja o exemplo e depois faça você!</div>
+<main><svg id="sheet" xmlns="http://www.w3.org/2000/svg" aria-label="Folha de traçado"></svg></main>
+<footer>
+  <button id="prev">← Anterior</button>
+  <button id="demo" class="demo">▶ Ver exemplo</button>
+  <button id="clear">Apagar</button>
+  <button id="next" class="next">Próximo →</button>
+  <span id="errors">Erros neste número: 0</span>
+</footer>
+
+<script>
+// ---------- caminhos e conferência ----------
+// Cada número numa caixa de 100 x 140 (o 10 tem 180 de largura), da bolinha para a estrelinha.
+const H = 140;
+const START_RADIUS = 24, OFF_LINE = 32, BACK_LIMIT = 20, WINDOW_BACK = 60, WINDOW_AHEAD = 45, STEP = 4, END_SLACK = 18;
+const PATHS = [
+  ["1", 100, ["M50 15 L50 125"]],
+  ["2", 100, ["M22 45 C22 10, 80 8, 80 42 C80 62, 60 78, 20 125 L82 125"]],
+  ["3", 100, ["M22 32 C30 8, 80 10, 76 38 C74 56, 60 62, 44 66 C58 70, 82 78, 80 100 C78 132, 28 135, 20 112"]],
+  ["4", 100, ["M54 15 L16 92 L86 92", "M66 45 L66 128"]],
+  ["5", 100, ["M28 18 L24 68 C40 55, 82 58, 80 95 C78 132, 30 132, 20 112", "M28 18 L80 18"]],
+  ["6", 100, ["M74 18 C50 30, 20 60, 22 95 C24 125, 78 130, 78 98 C78 70, 35 68, 24 92"]],
+  ["7", 100, ["M18 20 L82 20 L42 125"]],
+  ["8", 100, ["M74 26 C66 8, 28 10, 28 34 C28 58, 72 62, 74 94 C76 128, 24 128, 26 94 C28 62, 70 58, 70 44"]],
+  ["9", 100, ["M74 40 C72 12, 26 12, 26 42 C26 70, 74 72, 74 42 L74 125"]],
+  ["10", 180, ["M40 15 L40 125", "M118 14 C95 14, 88 45, 88 70 C88 100, 98 125, 120 125 C142 125, 152 100, 152 70 C152 42, 146 16, 128 16"]],
+];
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
+function parsePath(d) {
+  const tok = d.match(/[MLC]|-?\d+(?:\.\d+)?/g) || [];
+  const out = []; let i = 0, cur = { x: 0, y: 0 }, cmd = "M";
+  const num = () => Number(tok[i++]);
+  while (i < tok.length) {
+    if (/[MLC]/.test(tok[i])) cmd = tok[i++];
+    if (cmd === "M" || cmd === "L") { cur = { x: num(), y: num() }; out.push(cur); cmd = "L"; }
+    else {
+      const p0 = cur, p1 = { x: num(), y: num() }, p2 = { x: num(), y: num() }, p3 = { x: num(), y: num() };
+      for (let k = 1; k <= 40; k++) {
+        const t = k / 40, u = 1 - t;
+        out.push({
+          x: u*u*u*p0.x + 3*u*u*t*p1.x + 3*u*t*t*p2.x + t*t*t*p3.x,
+          y: u*u*u*p0.y + 3*u*u*t*p1.y + 3*u*t*t*p2.y + t*t*t*p3.y,
+        });
+      }
+      cur = p3;
+    }
+  }
+  return out;
+}
+function buildStroke(d) {
+  const raw = parsePath(d), rawCum = [0];
+  for (let k = 1; k < raw.length; k++) rawCum.push(rawCum[k-1] + dist(raw[k-1], raw[k]));
+  const len = rawCum[rawCum.length - 1], n = Math.max(2, Math.round(len));
+  const pts = [], cum = []; let j = 0;
+  for (let k = 0; k <= n; k++) {
+    const s = len * k / n;
+    while (j < raw.length - 2 && rawCum[j+1] < s) j++;
+    const a = raw[j], b = raw[j+1], seg = rawCum[j+1] - rawCum[j] || 1;
+    const f = Math.min(1, Math.max(0, (s - rawCum[j]) / seg));
+    pts.push({ x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f }); cum.push(s);
+  }
+  return { d, pts, cum, len };
+}
+const DIGITS = PATHS.map(([label, width, strokes]) => ({ label, width, strokes: strokes.map(buildStroke) }));
+
+const indexAt = (st, s) => Math.min(st.pts.length - 1, Math.max(0, Math.round(s / st.len * (st.pts.length - 1))));
+const pointAt = (st, s) => st.pts[indexAt(st, s)];
+function tangentAt(st, s) {
+  const i = indexAt(st, s), a = st.pts[Math.max(0, i-3)], b = st.pts[Math.min(st.pts.length-1, i+3)], l = dist(a, b) || 1;
+  return { x: (b.x - a.x) / l, y: (b.y - a.y) / l };
+}
+const startOf = st => st.pts[0], endOf = st => st.pts[st.pts.length - 1];
+
+// Ao encostar a caneta: precisa ser na bolinha (ou, se já começou, onde parou).
+function beginTrack(st, p, prev) {
+  if (prev && prev.s > 0) return dist(p, pointAt(st, prev.s)) <= START_RADIUS ? { ...prev, back: 0, anchor: p } : "fora-do-ponto";
+  const dStart = dist(p, startOf(st)), dEnd = dist(p, endOf(st));
+  // no 8 e no 0 a bolinha fica colada na estrelinha: perto da bolinha vale, e o sentido é conferido no caminho
+  const closed = dist(startOf(st), endOf(st)) < START_RADIUS;
+  if (dStart <= START_RADIUS && (dStart <= dEnd || closed)) return { s: 0, back: 0, anchor: p, drawn: 0 };
+  if (dEnd <= START_RADIUS) return "comecou-na-estrela";
+  return "fora-da-bolinha";
+}
+// A cada movimento: avança pelo caminho e acusa quando o traço volta no sentido contrário.
+// Sair da linha não é erro; só o caminho e o sentido contam.
+function stepTrack(st, tr, to) {
+  const mx = to.x - tr.anchor.x, my = to.y - tr.anchor.y, moved = Math.hypot(mx, my);
+  if (moved < STEP) return null;
+  tr.anchor = to; tr.drawn += moved;
+  const lo = indexAt(st, tr.s - WINDOW_BACK), hi = indexAt(st, tr.s + WINDOW_AHEAD);
+  let best = -1, bestScore = Infinity, bestKind = "neutro";
+  for (let k = lo; k <= hi; k++) {
+    const dd = dist(to, st.pts[k]);
+    if (dd > OFF_LINE) continue;
+    const t = tangentAt(st, st.cum[k]), cos = (t.x * mx + t.y * my) / moved;
+    const passed = st.cum[k] < tr.s - 12;
+    const kind = cos < -0.3 ? "volta" : (cos < 0.6 || passed) ? "neutro" : "segue";
+    const score = dd + (kind === "volta" ? 12 : kind === "neutro" ? (passed ? 13 : 6) : 0);
+    if (score < bestScore) { bestScore = score; best = k; bestKind = kind; }
+  }
+  if (best < 0) return null;
+  if (bestKind === "segue") { tr.s = Math.max(tr.s, st.cum[best]); tr.back = Math.max(0, tr.back - moved); return null; }
+  if (bestKind === "neutro") return null;
+  tr.back += moved;
+  return tr.back > BACK_LIMIT ? "sentido-errado" : null;
+}
+const reachedEnd = (st, tr) => tr.s >= st.len - END_SLACK || (tr.s >= st.len * 0.6 && dist(tr.anchor, endOf(st)) <= START_RADIUS);
+const wanderedOff = (st, tr) => tr.drawn > Math.max(40, st.len * 0.6) && tr.s < st.len * 0.3;
+
+const ERROR_TEXT = {
+  "comecou-na-estrela": "Ops! Começou pela estrelinha. Comece na bolinha ●",
+  "fora-da-bolinha": "Comece em cima da bolinha ●",
+  "fora-do-ponto": "Continue de onde você parou",
+  "sentido-errado": "Sentido errado! Siga da bolinha para a estrelinha ★",
+  "outro-caminho": "Esse não é o caminho! Siga da bolinha ● para a estrelinha ★",
+};
+
+// ---------- tela ----------
+const NS = "http://www.w3.org/2000/svg";
+const svg = document.getElementById("sheet"), msgEl = document.getElementById("msg"), nav = document.getElementById("digits");
+const errorsEl = document.getElementById("errors"), soundBtn = document.getElementById("sound");
+const STORAGE_KEY = "tracado-estrelas", DEMO_SPEED = 85;
+
+let digitIdx = 0, strokeIdx = 0, status = "idle", track = null, pointerId = null, penSeen = false;
+let doneInk = [], ink = [], demo = null, errors = 0, sound = true, timer = null, raf = null;
+let stars = {};
+try { stars = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { stars = {}; }
+
+let audio = null;
+function beep(kind) {
+  if (!sound) return;
+  try {
+    audio = audio || new AudioContext();
+    const notes = kind === "erro" ? [220, 180] : kind === "ok" ? [660] : [523, 659, 784];
+    notes.forEach((f, k) => {
+      const o = audio.createOscillator(), g = audio.createGain(), t0 = audio.currentTime + k * 0.13;
+      o.type = kind === "erro" ? "square" : "sine"; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.15, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+      o.connect(g).connect(audio.destination); o.start(t0); o.stop(t0 + 0.22);
+    });
+  } catch {}
+}
+
+function el(tag, attrs, parent) {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+const ptsAttr = pts => pts.map(p => p.x.toFixed(1) + "," + p.y.toFixed(1)).join(" ");
+function starPath(cx, cy, r) {
+  const p = [];
+  for (let k = 0; k < 10; k++) {
+    const a = -Math.PI / 2 + k * Math.PI / 5, rr = k % 2 === 0 ? r : r * 0.45;
+    p.push((cx + rr * Math.cos(a)).toFixed(1) + "," + (cy + rr * Math.sin(a)).toFixed(1));
+  }
+  return "M" + p.join(" L") + " Z";
+}
+
+function setMsg(text, kind) {
+  msgEl.textContent = text;
+  msgEl.className = kind || "";
+  svg.setAttribute("class", kind || "");
+}
+
+function renderNav() {
+  nav.innerHTML = "";
+  DIGITS.forEach((d, k) => {
+    const b = document.createElement("button");
+    b.textContent = d.label;
+    b.setAttribute("aria-current", k === digitIdx ? "true" : "false");
+    b.setAttribute("aria-label", "Número " + d.label);
+    if (stars[d.label]) { const s = document.createElement("span"); s.className = "badge"; s.textContent = "★" + stars[d.label]; b.appendChild(s); }
+    b.onclick = () => goTo(k);
+    nav.appendChild(b);
+  });
+}
+
+
+function render() {
+  const d = DIGITS[digitIdx], pad = 14;
+  svg.setAttribute("viewBox", `${-pad} ${-pad} ${d.width + pad * 2} ${H + pad * 2}`);
+  svg.innerHTML = "";
+  const round = { fill: "none", "stroke-linecap": "round", "stroke-linejoin": "round" };
+  d.strokes.forEach(st => {
+    el("path", { d: st.d, ...round, stroke: "var(--band)", "stroke-width": 22 }, svg);
+    el("path", { d: st.d, fill: "none", stroke: "var(--dash)", "stroke-width": 1.3, "stroke-dasharray": "3 3" }, svg);
+  });
+  if (demo) {
+    d.strokes.slice(0, demo.stroke + 1).forEach((st, k) => {
+      const pts = st.pts.slice(0, indexAt(st, k < demo.stroke ? st.len : demo.s) + 1);
+      el("polyline", { points: ptsAttr(pts), ...round, stroke: "var(--demo)", "stroke-width": 7 }, svg);
+      if (k === demo.stroke) { const h = pts[pts.length - 1]; el("circle", { cx: h.x, cy: h.y, r: 7, fill: "var(--demo)", stroke: "var(--sheet)", "stroke-width": 2 }, svg); }
+    });
+  }
+  doneInk.flat().forEach(pts => el("polyline", { points: ptsAttr(pts), ...round, stroke: "var(--ok)", "stroke-width": 6 }, svg));
+  const inkColor = status === "error" ? "var(--err)" : status === "success" ? "var(--ok)" : "var(--accent)";
+  ink.forEach(pts => el("polyline", { points: ptsAttr(pts), ...round, stroke: inkColor, "stroke-width": 6 }, svg));
+  d.strokes.forEach((st, k) => {
+    const a = startOf(st), b = endOf(st);
+    const g = el("g", { "pointer-events": "none" }, svg);
+    if (k === strokeIdx && status !== "demo" && status !== "success" && !(track && track.s > 0)) {
+      const c = el("circle", { class: "pulse", cx: a.x, cy: a.y, r: 9, fill: "none", stroke: "var(--ok)", "stroke-width": 2 }, g);
+      el("animate", { attributeName: "r", values: "7;13;7", dur: "1.2s", repeatCount: "indefinite" }, c);
+      el("animate", { attributeName: "opacity", values: "1;0.3;1", dur: "1.2s", repeatCount: "indefinite" }, c);
+    }
+    el("path", { d: starPath(b.x, b.y, 6.5), fill: "var(--mark)" }, g);
+    el("circle", { cx: a.x, cy: a.y, r: 4.5, fill: "var(--mark)" }, g);
+    if (d.strokes.length > 1) {
+      // o 5 começa os dois traços na mesma bolinha: o número do 2º traço vai para o outro lado
+      const shared = d.strokes.slice(0, k).some(o => dist(startOf(o), a) < 6);
+      const t = el("text", { x: a.x + (shared ? 4 : -11), y: a.y - 6, "font-size": 9, "font-weight": 800, fill: "var(--accent)", "font-family": "var(--font-body)" }, g);
+      t.textContent = String(k + 1);
+    }
+  });
+  errorsEl.textContent = "Erros neste número: " + errors;
+}
+
+function clearTimers() {
+  if (timer) clearTimeout(timer);
+  if (raf) cancelAnimationFrame(raf);
+  timer = raf = null;
+}
+function resetTrace() { track = null; pointerId = null; strokeIdx = 0; doneInk = []; ink = []; }
+
+function startDemo() {
+  clearTimers(); resetTrace();
+  status = "demo"; setMsg("Olhe o caminho: da bolinha ● para a estrelinha ★");
+  const d = DIGITS[digitIdx];
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    demo = { stroke: d.strokes.length - 1, s: d.strokes[d.strokes.length - 1].len }; render();
+    timer = setTimeout(endDemo, 1500); return;
+  }
+  let k = 0, s = 0, last = performance.now();
+  const tick = now => {
+    s += (now - last) / 1000 * DEMO_SPEED; last = now;
+    if (s >= d.strokes[k].len) {
+      if (k < d.strokes.length - 1) { k++; s = 0; }
+      else { demo = { stroke: k, s: d.strokes[k].len }; render(); timer = setTimeout(endDemo, 700); return; }
+    }
+    demo = { stroke: k, s }; render();
+    raf = requestAnimationFrame(tick);
+  };
+  raf = requestAnimationFrame(tick);
+}
+function endDemo() { demo = null; status = "idle"; setMsg("Agora é sua vez! Comece na bolinha ●"); render(); }
+
+function goTo(idx) {
+  clearTimers(); errors = 0; demo = null;
+  digitIdx = (idx + DIGITS.length) % DIGITS.length;
+  renderNav(); startDemo();
+}
+
+function toSvg(e) {
+  const m = svg.getScreenCTM();
+  if (!m) return null;
+  const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+  return { x: p.x, y: p.y };
+}
+
+function fail(text) {
+  track = null; pointerId = null; status = "error"; errors++;
+  setMsg(text, "err"); beep("erro");
+  try { navigator.vibrate && navigator.vibrate(150); } catch {}
+  render(); clearTimers();
+  timer = setTimeout(() => {
+    ink = []; status = "idle";
+    setMsg(DIGITS[digitIdx].strokes.length > 1 ? `Tente de novo: comece na bolinha ● do traço ${strokeIdx + 1}` : "Tente de novo: comece na bolinha ●");
+    render();
+  }, 1400);
+}
+
+svg.addEventListener("pointerdown", e => {
+  if (e.pointerType === "pen") penSeen = true;
+  if (e.pointerType === "touch" && penSeen) return; // palma da mão encostando
+  if (pointerId !== null || status === "demo" || status === "error" || status === "success") return;
+  const p = toSvg(e); if (!p) return;
+  const st = DIGITS[digitIdx].strokes[strokeIdx];
+  const res = beginTrack(st, p, track);
+  if (typeof res === "string") { ink.push([p]); fail(ERROR_TEXT[res]); return; }
+  try { svg.setPointerCapture(e.pointerId); } catch {}
+  pointerId = e.pointerId; track = res; status = "drawing";
+  setMsg("Isso! Siga o caminho até a estrelinha ★");
+  ink.push([p]); render();
+});
+
+svg.addEventListener("pointermove", e => {
+  if (pointerId !== e.pointerId || !track) return;
+  const st = DIGITS[digitIdx].strokes[strokeIdx];
+  const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+  const cur = ink[ink.length - 1];
+  for (const ev of evs.length ? evs : [e]) {
+    const p = toSvg(ev); if (!p) continue;
+    cur.push(p);
+    const err = stepTrack(st, track, p);
+    if (err) { fail(ERROR_TEXT[err]); return; }
+  }
+  render();
+});
+
+function onUp(e) {
+  if (pointerId !== e.pointerId) return;
+  pointerId = null;
+  if (!track) return;
+  const d = DIGITS[digitIdx], st = d.strokes[strokeIdx];
+  if (!reachedEnd(st, track)) {
+    if (wanderedOff(st, track)) { fail(ERROR_TEXT["outro-caminho"]); return; }
+    status = "idle"; setMsg("Continue de onde parou até a estrelinha ★"); render(); return;
+  }
+  doneInk.push(ink); ink = []; track = null;
+  if (strokeIdx < d.strokes.length - 1) {
+    strokeIdx++; status = "idle";
+    setMsg(`Muito bem! Agora o traço ${strokeIdx + 1}: comece na bolinha ●`); beep("ok"); render(); return;
+  }
+  status = "success"; setMsg("Parabéns! Traçado certinho! ★", "ok"); beep("fim");
+  stars[d.label] = (stars[d.label] || 0) + 1;
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(stars)); } catch {}
+  renderNav(); render(); clearTimers();
+  timer = setTimeout(() => { resetTrace(); status = "idle"; setMsg("De novo! Comece na bolinha ●"); render(); }, 1800);
+}
+svg.addEventListener("pointerup", onUp);
+svg.addEventListener("pointercancel", onUp);
+svg.addEventListener("contextmenu", e => e.preventDefault());
+
+document.getElementById("demo").onclick = startDemo;
+document.getElementById("prev").onclick = () => goTo(digitIdx - 1);
+document.getElementById("next").onclick = () => goTo(digitIdx + 1);
+document.getElementById("clear").onclick = () => { clearTimers(); resetTrace(); demo = null; status = "idle"; setMsg("Comece na bolinha ●"); render(); };
+soundBtn.onclick = () => {
+  sound = !sound;
+  soundBtn.textContent = sound ? "Som: ligado" : "Som: desligado";
+  soundBtn.setAttribute("aria-pressed", String(sound));
+};
+
+// mantém a tela do tablet acesa enquanto o aluno treina
+async function keepAwake() { try { await navigator.wakeLock.request("screen"); } catch {} }
+keepAwake();
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") keepAwake(); });
+
+renderNav(); startDemo();
+</script>
+<script>
+// funciona sem internet depois da primeira visita, e o tablet recebe as atualizações sozinho
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+</script>
+</body>
+</html>
