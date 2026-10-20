@@ -261,7 +261,7 @@ let mode = "treino";
 let digitIdx = 0;           // treino: número escolhido; folha: número da vez
 let strokeIdx = 0, status = "idle", track = null, pointerId = null, penSeen = false;
 let doneInk = [], ink = [], demo = null, errors = 0, sound = true, timer = null, raf = null;
-let sheetInk = [];          // folha: traços dos números já terminados
+let sheetInk = {};          // folha: traços de cada número já terminado (por posição), em qualquer ordem
 let shadows = [];           // traços seguintes acompanhados para conferir a ordem
 const orderText = () => `Ordem errada! Primeiro o traço ${strokeIdx + 1}, depois o ${strokeIdx + 2} ●`;
 let layout = null;          // folha: onde fica cada número
@@ -323,7 +323,7 @@ function renderHeader() {
   nav.hidden = mode !== "treino";
   $("foot-treino").hidden = mode !== "treino";
   $("foot-folha").hidden = mode !== "folha";
-  $("sheet-count").textContent = `Erros nesta folha: ${errors} · Folhas completas: ${sheets}`;
+  $("sheet-count").textContent = `Feitos: ${Object.keys(sheetInk).length} de 10 · Erros nesta folha: ${errors} · Folhas completas: ${sheets}`;
   $("errors").textContent = "Erros neste número: " + errors;
 }
 
@@ -447,12 +447,13 @@ function renderFolha() {
   let marks = [];
   DIGITS.forEach((d, i) => {
     const c = cells[i];
-    if (i === digitIdx && status !== "success") el("rect", { x: c.x + 2, y: c.y + 2, width: c.w - 4, height: c.h - 4, rx: 8, fill: "var(--info-soft)" }, svg);
+    if (i in sheetInk) el("rect", { x: c.x + 2, y: c.y + 2, width: c.w - 4, height: c.h - 4, rx: 8, fill: "var(--ok-soft)" }, svg);
+    else if (i === digitIdx && status !== "success") el("rect", { x: c.x + 2, y: c.y + 2, width: c.w - 4, height: c.h - 4, rx: 8, fill: "var(--info-soft)" }, svg);
     el("rect", { x: c.x, y: c.y, width: c.w, height: c.h, fill: "none", stroke: "var(--line)", "stroke-width": 1.2 }, svg);
     const g = el("g", { transform: `translate(${c.ox} ${c.oy})` }, svg);
     marks.push(drawGuides(g, d, i === digitIdx && waitingStart() ? strokeIdx : -1));
   });
-  sheetInk.flat().forEach(pts => el("polyline", { points: ptsAttr(pts), ...ROUND, stroke: "var(--ok)", "stroke-width": 6 }, svg));
+  Object.values(sheetInk).flat().forEach(pts => el("polyline", { points: ptsAttr(pts), ...ROUND, stroke: "var(--ok)", "stroke-width": 6 }, svg));
   drawInk(svg);
   marks.forEach(m => m());
 }
@@ -501,8 +502,8 @@ function setMode(m) {
   }
   clearTimers(); resetTrace(); demo = null; errors = 0; mode = m;
   if (m === "folha") {
-    digitIdx = 0; sheetInk = []; layout = null; status = "idle";
-    setMsg("Agora sozinho! Faça do 1 ao 10. Comece na bolinha do 1 ●");
+    digitIdx = 0; sheetInk = {}; layout = null; status = "idle";
+    setMsg("Agora sozinho! Escolha um número da folha e comece na bolinha ●");
     render();
   } else {
     renderNav(); startDemo();
@@ -510,8 +511,8 @@ function setMode(m) {
 }
 
 function startSheet() {
-  clearTimers(); resetTrace(); errors = 0; digitIdx = 0; sheetInk = []; status = "idle";
-  setMsg("Agora sozinho! Faça do 1 ao 10. Comece na bolinha do 1 ●");
+  clearTimers(); resetTrace(); errors = 0; digitIdx = 0; sheetInk = {}; status = "idle";
+  setMsg("Agora sozinho! Escolha um número da folha e comece na bolinha ●");
   render();
 }
 
@@ -550,9 +551,11 @@ svg.addEventListener("pointerdown", e => {
   if (pointerId !== null || status === "demo" || status === "error" || status === "success") return;
   const p = toSvg(e); if (!p) return;
   if (mode === "folha") {
-    // na folha, encostar em outro número só lembra qual é a vez (não conta como erro)
+    // na folha o aluno escolhe o número, em qualquer ordem, começando a traçar nele
     const hit = cellAt(p);
-    if (hit !== digitIdx) { setMsg(`Agora é o número ${DIGITS[digitIdx].label}. Comece na bolinha ●`); return; }
+    if (hit < 0) return;
+    if (hit in sheetInk) { setMsg(`O ${DIGITS[hit].label} já está pronto ★ Escolha outro número`); return; }
+    if (hit !== digitIdx) { digitIdx = hit; resetTrace(); } // o que tinha começado no outro número fica para depois
   }
   const d = DIGITS[digitIdx], st = d.strokes[strokeIdx], lp = local(p);
   const res = beginTrack(st, lp, track, tol());
@@ -616,11 +619,13 @@ function onUp(e) {
 }
 
 function finishSheetDigit() {
-  sheetInk.push(...doneInk);
+  sheetInk[digitIdx] = doneInk;
   doneInk = []; strokeIdx = 0; track = null;
-  if (digitIdx < DIGITS.length - 1) {
-    digitIdx++; status = "idle";
-    setMsg(`Muito bem! Agora o número ${DIGITS[digitIdx].label}: comece na bolinha ●`); beep("ok"); render(); return;
+  const falta = DIGITS.map((d, i) => i).filter(i => !(i in sheetInk));
+  if (falta.length) {
+    // sugere o próximo que falta, mas o aluno pode escolher qualquer um
+    digitIdx = falta.find(i => i > digitIdx) ?? falta[0]; status = "idle";
+    setMsg(`Muito bem! Escolha outro número. Faltam: ${falta.map(i => DIGITS[i].label).join(", ")}`); beep("ok"); render(); return;
   }
   status = "success"; sheets++; save(); beep("fim");
   setMsg(errors ? `Parabéns! Você fez do 1 ao 10 sozinho! ★ (${errors} ${errors === 1 ? "erro" : "erros"})` : "Parabéns! Você fez do 1 ao 10 sozinho, sem nenhum erro! ★", "ok");

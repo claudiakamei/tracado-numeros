@@ -3,7 +3,7 @@
 Treino de traçado dos números de 1 a 10 para tablet com caneta. O sistema mostra o caminho certo (da bolinha para a estrelinha) e avisa quando o aluno faz o traço no sentido errado. Sair da linha não é erro.
 
 - **Treino:** um número grande por vez, com exemplo animado.
-- **Folha 1 ao 10:** libera depois que o aluno treinou todos os números; os 10 números pequenos lado a lado, como a folha de papel, feitos em ordem e sem exemplo.
+- **Folha 1 ao 10:** libera depois que o aluno treinou todos os números; os 10 números pequenos lado a lado, como a folha de papel, sem exemplo. O aluno escolhe a ordem (começa a traçar no número que quiser); a folha fica completa quando os 10 estão feitos.
 - **Novo aluno:** zera as estrelinhas do tablet (o progresso fica guardado no próprio aparelho).
 
 Endereço: https://tracado.kameiflow.com
