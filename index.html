@@ -216,7 +216,7 @@ const LETTER_PATHS = [
   ["c", 0, 74, ["M57 54 C52 47, 44 47, 38 47 C22 47, 13 62, 13 78 C13 96, 24 109, 38 109 C48 109, 56 104, 61 96"]],
   ["d", 0, 74, ["M51 52 C44 45, 14 46, 13 78 C12 104, 30 111, 40 109 C48 107, 55 102, 59 96", "M61 22 L61 110"]],
   ["e", 0, 74, ["M20 80 L57 62 C56 52, 47 47, 38 47 C22 47, 13 62, 13 79 C13 96, 25 109, 40 109 C49 109, 56 104, 61 97"]],
-  ["f", -4, 58, ["M50 21 C40 21, 35 25, 35 34 L35 110", "M2 48 L47 48"]],
+  ["f", -4, 58, ["M47 21 C34 20, 21 24, 20.5 40 L20.5 110", "M2 48 L47 48"]],
   ["g", 0, 74, ["M51 52 C44 45, 14 46, 14 77 C14 101, 30 108, 40 106 C48 104, 55 99, 59 93", "M61 46 L61 118 C61 130, 50 134, 38 133 C30 133, 24 132, 18 131"]],
   ["h", 0, 74, ["M17.5 21 L17.5 110", "M19 66 C24 54, 32 47, 42 47 C56 47, 62 56, 62 72 L62 110"]],
   ["i", 0, 34, ["M18.5 46 L18.5 110", "M18.5 24 L18.5 25"]],
@@ -238,7 +238,9 @@ const LETTER_PATHS = [
   ["y", 0, 74, ["M6 46.5 L36 100", "M61 46.5 L21 137.5"]],
   ["z", 0, 67, ["M4 49 L55 49 L7 105 L58 105"]],
 ];
-const LETTERS = LETTER_PATHS.map(([label, x0, width, strokes]) => ({ label, x0, width, height: LETTER_FONT.height, font: true, strokes: strokes.map(buildStroke) }));
+// letras que podem ser feitas sem tirar a caneta entre um traço e outro (volta pela linha até a próxima bolinha)
+const CONTINUOUS = new Set("abdghmnpqru");
+const LETTERS = LETTER_PATHS.map(([label, x0, width, strokes]) => ({ label, x0, width, height: LETTER_FONT.height, font: true, cont: CONTINUOUS.has(label), strokes: strokes.map(buildStroke) }));
 const isTap = st => st.len < 4; // pingo do i e do j
 
 // Os dois conjuntos do aplicativo e os textos de cada um
@@ -324,6 +326,8 @@ let doneInk = [], ink = [], demo = null, errors = 0, sound = true, timer = null,
 let sheetInk = {};          // folha: traços de cada número já terminado (por posição), em qualquer ordem
 let sheetCelebrated = false; // folha: já comemorou os 10 feitos (repetir um número não conta outra folha)
 let shadows = [];           // traços seguintes acompanhados para conferir a ordem
+let bridge = null;          // traçado contínuo: passando de um traço para o próximo sem tirar a caneta
+let lifting = false;        // o traço já chegou na estrelinha; espera tirar a caneta
 const orderText = () => `Ordem errada! Primeiro o traço ${strokeIdx + 1}, depois o ${strokeIdx + 2} ●`;
 let layout = null;          // folha: onde fica cada número
 // estrelinhas por número/letra (os rótulos não se repetem entre os conjuntos) e folhas completas por conjunto
@@ -562,7 +566,7 @@ function clearTimers() {
   if (raf) cancelAnimationFrame(raf);
   timer = raf = null;
 }
-function resetTrace() { track = null; pointerId = null; strokeIdx = 0; doneInk = []; ink = []; }
+function resetTrace() { track = null; pointerId = null; strokeIdx = 0; doneInk = []; ink = []; bridge = null; lifting = false; }
 
 function startDemo() {
   if (mode !== "treino") return;
@@ -641,7 +645,7 @@ function retryText() {
 }
 
 function fail(text) {
-  track = null; pointerId = null; status = "error"; errors++;
+  track = null; pointerId = null; bridge = null; lifting = false; status = "error"; errors++;
   setMsg(text, "err"); beep("erro");
   try { navigator.vibrate && navigator.vibrate(150); } catch {}
   render(); clearTimers();
@@ -681,26 +685,54 @@ svg.addEventListener("pointerdown", e => {
   ink.push([p]); render();
 });
 
+// Traçado contínuo (letras com "cont"): terminado um traço, o aluno pode seguir sem tirar a caneta,
+// voltando pela linha até a bolinha do próximo traço. Esse trecho de passagem não é conferido.
+// O próximo traço começa quando a caneta está perto da bolinha dele (até 16) e já anda no sentido dele:
+// no "a" depois de subir pela perninha e virar para baixo; no "n" ao subir e seguir para o arco.
+function bridgeStep(p, lp) {
+  const d = G[digitIdx], next = d.strokes[strokeIdx + 1];
+  const prev = bridge.last;
+  if (!prev) { bridge.last = lp; return; }
+  const mx = lp.x - prev.x, my = lp.y - prev.y, moved = Math.hypot(mx, my);
+  if (moved < 3) return;
+  bridge.last = lp;
+  if (dist(lp, startOf(next)) > 16) return;
+  const t = tangentAt(next, 4);
+  if ((t.x * mx + t.y * my) / moved < 0.5) return;
+  bridge = null;
+  doneInk.push(ink); ink = [[p]]; strokeIdx++;
+  track = { s: 0, back: 0, anchor: lp, drawn: 0 };
+  shadows = d.strokes.slice(strokeIdx + 1).filter(o => typeof beginTrack(o, lp, null, tol()) !== "string")
+    .map(o => ({ st: o, tr: beginTrack(o, lp, null, tol()) }));
+  setMsg(`Isso! Agora o traço ${strokeIdx + 1}, até a estrelinha ★`);
+}
+
 svg.addEventListener("pointermove", e => {
   if (pointerId !== e.pointerId || !track) return;
-  const st = G[digitIdx].strokes[strokeIdx];
+  const d = G[digitIdx];
   const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
-  const cur = ink[ink.length - 1];
   for (const ev of evs.length ? evs : [e]) {
     const p = toSvg(ev); if (!p) continue;
-    cur.push(p);
+    ink[ink.length - 1].push(p);
     const lp = local(p);
+    if (bridge) { bridgeStep(p, lp); continue; }
+    if (lifting) continue; // traço já chegou na estrelinha: o resto até tirar a caneta não conta
+    const st = d.strokes[strokeIdx];
     for (const sh of shadows) stepTrack(sh.st, sh.tr, lp, tol());
     if (track.s < 8 && shadows.some(sh => sh.tr.s > 20)) { fail(orderText()); return; }
     const err = stepTrack(st, track, lp, tol());
+    // depois de chegar na estrelinha, rabiscar sem tirar a caneta não é erro: só pede para tirar a caneta
+    if (err && track.s >= st.len - 12) { lifting = true; setMsg("Muito bem! Agora tire a caneta da tela ✋"); continue; }
     if (err) { fail(ERROR_TEXT[err]); return; }
+    // traçado contínuo: só depois de chegar mesmo no fim do traço
+    if (d.cont && strokeIdx < d.strokes.length - 1 && track.s >= st.len - 12) bridge = { last: null };
   }
   render();
 });
 
 function onUp(e) {
   if (pointerId !== e.pointerId) return;
-  pointerId = null;
+  pointerId = null; bridge = null; lifting = false; // tirou a caneta no meio da passagem: o traço anterior já está feito
   if (!track) return;
   const d = G[digitIdx], st = d.strokes[strokeIdx];
   if (!reachedEnd(st, track, tol())) {
