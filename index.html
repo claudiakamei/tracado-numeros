@@ -75,7 +75,6 @@
   .tabs { display: inline-flex; border: 2px solid var(--line); border-radius: 18px; background: var(--sheet); padding: 3px; gap: 3px; }
   .tabs button { border: 0; background: none; padding: 7px 14px; font-weight: 800; border-radius: 14px; }
   .tabs button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
-  .tabs button.locked { color: var(--muted); }
   .tabs button.ready { animation: chama 1.2s ease-in-out infinite; }
   @keyframes chama { 50% { box-shadow: 0 0 0 4px var(--star); } }
   .tabs small { font-weight: 600; font-size: 0.75rem; }
@@ -271,7 +270,7 @@ try { sheets = Number(localStorage.getItem(SHEETS_KEY) || 0) || 0; } catch { she
 const save = () => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(stars)); localStorage.setItem(SHEETS_KEY, String(sheets)); } catch {} };
 
 const missing = () => DIGITS.filter(d => !stars[d.label]).map(d => d.label);
-const unlocked = () => missing().length === 0;
+const allTrained = () => missing().length === 0; // treinou todos os números (a folha fica sempre liberada)
 
 let audio = null;
 function beep(kind) {
@@ -316,9 +315,8 @@ function renderHeader() {
   tT.setAttribute("aria-pressed", String(mode === "treino"));
   tF.setAttribute("aria-pressed", String(mode === "folha"));
   const falta = missing();
-  tF.classList.toggle("locked", falta.length > 0);
   tF.classList.toggle("ready", falta.length === 0 && mode === "treino");
-  tF.innerHTML = falta.length ? `Folha 1 ao 10 <small>(faltam ${falta.length})</small>` : "Folha 1 ao 10";
+  tF.textContent = "Folha 1 ao 10";
   document.body.classList.toggle("folha", mode === "folha");
   nav.hidden = mode !== "treino";
   $("foot-treino").hidden = mode !== "treino";
@@ -496,10 +494,6 @@ function goTo(idx) {
 }
 
 function setMode(m) {
-  if (m === "folha" && !unlocked()) {
-    setMsg(`Para liberar a folha, treine todos os números. Faltam: ${missing().join(", ")}`);
-    return;
-  }
   clearTimers(); resetTrace(); demo = null; errors = 0; mode = m;
   if (m === "folha") {
     digitIdx = 0; sheetInk = {}; layout = null; status = "idle";
@@ -606,11 +600,11 @@ function onUp(e) {
     setMsg(`Muito bem! Agora o traço ${strokeIdx + 1}: comece na bolinha ●`); beep("ok"); render(); return;
   }
   if (mode === "folha") return finishSheetDigit();
-  const wasLocked = !unlocked();
+  const firstTimeAll = !allTrained();
   status = "success"; setMsg("Parabéns! Traçado certinho! ★", "ok"); beep("fim");
   stars[d.label] = (stars[d.label] || 0) + 1; save();
   renderNav(); render(); clearTimers();
-  if (wasLocked && unlocked()) {
+  if (firstTimeAll && allTrained()) {
     // treinou todos: passa para a folha do 1 ao 10
     timer = setTimeout(() => { setMsg("Você treinou todos os números! Agora a folha do 1 ao 10 ★", "ok"); timer = setTimeout(() => setMode("folha"), 2200); }, 1500);
     return;
