@@ -1,6 +1,6 @@
 // Guarda o aplicativo no tablet para funcionar sem internet.
 // Ao publicar uma mudança, aumente a VERSAO para os tablets baixarem a versão nova.
-const VERSAO = "tracado-v10";
+const VERSAO = "tracado-v11";
 const ARQUIVOS = [
   "./",
   "index.html",
@@ -9,6 +9,7 @@ const ARQUIVOS = [
   "icons/icon-512.png",
   "icons/icon-maskable-512.png",
   "icons/apple-touch-icon.png",
+  "icons/kamei-flow-logo.png",
 ];
 
 self.addEventListener("install", (e) => {

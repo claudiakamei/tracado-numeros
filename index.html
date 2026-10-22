@@ -127,6 +127,10 @@
     footer button { padding: 8px 12px; font-size: 0.95rem; }
     .count { font-size: 0.8rem; }
   }
+  /* crédito discreto no canto, com a logo num fundo claro (a logo tem letras escuras) */
+  .credit { align-self: flex-end; display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--muted); text-decoration: none; margin-top: -4px; }
+  .credit img { height: 28px; width: auto; background: #fff; border-radius: 6px; padding: 2px 5px; }
+  .credit:hover span, .credit:focus-visible span { text-decoration: underline; }
   @media (prefers-reduced-motion: reduce) { .pulse { display: none; } .tabs button.ready { animation: none; box-shadow: 0 0 0 3px var(--star); } }
 </style>
 </head>
@@ -135,14 +139,16 @@
   <h1 id="title">Traçado de Números 1 ~ 10</h1>
   <div class="tools">
     <div class="tabs" role="group" aria-label="Números ou letras">
-      <button id="kind-numeros" aria-pressed="true">Números</button>
-      <button id="kind-letras" aria-pressed="false">Letras</button>
+      <button id="kind-numeros" aria-pressed="true" aria-label="Números">123</button>
+      <button id="kind-letras" aria-pressed="false" aria-label="Letras minúsculas">abc</button>
+      <button id="kind-maiusculas" aria-pressed="false" aria-label="Letras maiúsculas">ABC</button>
     </div>
     <div class="tabs" role="group" aria-label="Modo">
       <button id="tab-treino" aria-pressed="true">Treino</button>
       <button id="tab-folha" aria-pressed="false">Folha 1 ao 10</button>
     </div>
     <button class="soft" id="novo">Novo aluno</button>
+    <button class="soft" id="voice-lang" aria-label="Idioma da voz">Voz: Português</button>
     <button class="soft" id="sound" aria-pressed="true">Som: ligado</button>
   </div>
 </header>
@@ -165,6 +171,10 @@
   <button id="sheet-restart">Apagar a folha</button>
   <span class="count" id="sheet-count"></span>
 </footer>
+<a class="credit" href="https://kameiflow.com" target="_blank" rel="noopener">
+  <span>Desenvolvido por</span>
+  <img src="icons/kamei-flow-logo.png" alt="Kamei Flow" width="360" height="153">
+</a>
 
 <script>
 // ---------- caminhos e conferência ----------
@@ -258,22 +268,60 @@ const LETTER_PATHS = [
   ["z", 0, 67, ["M4 49 L55 49 L7 105 L58 105"]],
 ];
 // letras que podem ser feitas sem tirar a caneta entre um traço e outro (volta pela linha até a próxima bolinha)
+// Maiúsculas na mesma fonte e caixa (topo das maiúsculas ~y=14); mesma ordem escolar da letra bastão.
+const CAPS_PATHS = [
+  ["A", 0, 86, ["M43 21 L12 107", "M45 21 L73 107", "M12 83 L60 77"]],
+  ["B", 0, 91, ["M19 21 L19 108", "M19 21 L46 21 C62 21, 70 29, 70 41 C70 53, 60 61, 40 61 C64 61, 78 71, 78 85 C78 100, 64 108, 42 108 L19 108"]],
+  ["C", 0, 93, ["M75 30 C68 22, 58 20, 48 20 C26 20, 13 40, 13 64 C13 90, 28 108, 48 108 C62 108, 72 102, 78 93"]],
+  ["D", 0, 93, ["M19 21 L19 108", "M19 21 L40 21 C66 21, 80 40, 80 64 C80 90, 64 108, 40 108 L19 108"]],
+  ["E", 0, 91, ["M18.5 21 L18.5 108", "M19 21 L80 21", "M19 62 L72 62", "M19 108 L80 108"]],
+  ["F", 0, 91, ["M18 21 L18 108", "M19 21 L80 21", "M19 62 L67 62"]],
+  ["G", 0, 107, ["M84 40 C78 26, 64 20, 50 20 C26 20, 13 40, 13 64 C13 90, 30 108, 52 108 C72 108, 86 96, 89 80 L60 80"]],
+  ["H", 0, 100, ["M19 21 L19 108", "M88 21 L88 108", "M19 74 L88 59"]],
+  ["I", 0, 60, ["M30 21 L30 108", "M6 21 L54 21", "M6 108 L54 108"]],
+  ["J", 0, 72, ["M51 21 L51 85 C51 101, 44 107, 34 107 C24 107, 16 101, 12 92", "M24 21 L64 21"]],
+  ["K", 0, 86, ["M18 21 L18 108", "M70 22 L24 64 L74 106"]],
+  ["L", 0, 79, ["M18.5 21 L18.5 106 L68 106"]],
+  ["M", 0, 121, ["M30 21 L11 107", "M31 22 L58 106 L88 22", "M89 21 L107 107"]],
+  ["N", 0, 91, ["M19 21 L19 108", "M20 22 L79 107", "M79 21 L79 108"]],
+  ["O", 0, 95, ["M48 21 C29 21, 13.5 40.6, 13.5 64.7 C13.5 88.8, 29 108.4, 48 108.4 C67 108.4, 82.5 88.8, 82.5 64.7 C82.5 40.6, 67 21, 49.5 21"]],
+  ["P", 0, 86, ["M18.5 21 L18.5 108", "M19 21 L42 21 C62 21, 73 31, 73 45 C73 60, 60 69, 40 69 L20 69"]],
+  ["Q", 0, 102, ["M51.6 21 C30 21, 12.6 40.6, 12.6 64.7 C12.6 88.8, 30 108.4, 51.6 108.4 C73 108.4, 90.6 88.8, 90.6 64.7 C90.6 40.6, 73 21, 53 21", "M58 88 L90 110"]],
+  ["R", 0, 91, ["M18.5 21 L18.5 108", "M19 21 L42 21 C62 21, 74 31, 74 44 C74 58, 60 66, 40 66 L34 66 C50 70, 64 84, 77 106"]],
+  ["S", 0, 81, ["M66 34 C62 25, 54 21, 44 21 C28 21, 17 29, 17 42 C17 56, 30 61, 44 65 C60 70, 70 76, 70 89 C70 101, 58 108, 44 108 C28 108, 16 101, 11 90"]],
+  ["T", 0, 84, ["M39 22 L39 108", "M8 21 L72 21"]],
+  ["U", 0, 98, ["M16 21 L16 72 C16 96, 28 108, 50 108 C72 108, 84 96, 84 72 L84 21"]],
+  ["V", 0, 84, ["M10 21 L38 106 L71 21"]],
+  ["W", 0, 131, ["M10 21 L35 106 L61 22 L87 106 L117 21"]],
+  ["X", 0, 100, ["M17 21 L86 106", "M87 21 L15 106"]],
+  ["Y", 0, 93, ["M9 21 L43 64", "M78 21 L29 107"]],
+  ["Z", 0, 88, ["M11 22 L74 22 L9 107 L76 107"]],
+];
 const CONTINUOUS = new Set("abdghmnpqru");
+// maiúsculas que também podem ser feitas sem tirar a caneta (sobe pela haste até a próxima bolinha)
+const CONTINUOUS_CAPS = new Set("BDMNPR");
 const LETTERS = LETTER_PATHS.map(([label, x0, width, strokes]) => ({ label, x0, width, height: LETTER_FONT.height, font: true, cont: CONTINUOUS.has(label), strokes: strokes.map(buildStroke) }));
+const CAPS = CAPS_PATHS.map(([label, x0, width, strokes]) => ({ label, x0, width, height: LETTER_FONT.height, font: true, cont: CONTINUOUS_CAPS.has(label), strokes: strokes.map(buildStroke) }));
 const isTap = st => st.len < 4; // pingo do i e do j
 
 // Os dois conjuntos do aplicativo e os textos de cada um
 const SETS = {
   numeros: { G: DIGITS, title: "Traçado de Números 1 ~ 10", folha: "Folha 1 ao 10", one: "número", the: l => `o ${l}`, other: "outro número", here: "neste número",
              all: "todos os números", done: "do 1 ao 10", pick: "um número" },
-  letras: { G: LETTERS, title: "Traçado de Letras a ~ z", folha: "Folha a ~ z", one: "letra", the: l => `a letra ${l}`, other: "outra letra", here: "nesta letra",
+  letras: { G: LETTERS, title: "Traçado de Letras Minúsculas a ~ z", folha: "Folha a ~ z", one: "letra", the: l => `a letra ${l}`, other: "outra letra", here: "nesta letra",
             all: "todas as letras", done: "todas as letras", pick: "uma letra" },
+  maiusculas: { G: CAPS, title: "Traçado de Letras Maiúsculas A ~ Z", folha: "Folha A ~ Z", one: "letra", the: l => `a letra ${l}`, other: "outra letra", here: "nesta letra",
+                all: "todas as letras", done: "todas as maiúsculas", pick: "uma letra" },
 };
 // Nome falado de cada número e letra (voz do próprio tablet, em português). As vogais vão como "ah", "eh"…:
 // algumas vozes de celular leem um "á" sozinho como "a com acento agudo".
 const NAMES = { 1: "um", 2: "dois", 3: "três", 4: "quatro", 5: "cinco", 6: "seis", 7: "sete", 8: "oito", 9: "nove", 10: "dez",
   a: "ah", b: "bê", c: "cê", d: "dê", e: "eh", f: "éfe", g: "gê", h: "agá", i: "ih", j: "jota", k: "cá", l: "éle", m: "ême",
   n: "êne", o: "oh", p: "pê", q: "quê", r: "érre", s: "ésse", t: "tê", u: "uh", v: "vê", w: "dáblio", x: "xis", y: "ípsilon", z: "zê" };
+// Em inglês (botão "Voz"): escrito como se fala, para a voz não ler a letra como palavra (ex.: "a" como artigo)
+const NAMES_EN = { 1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten",
+  a: "ay", b: "bee", c: "see", d: "dee", e: "ee", f: "ef", g: "jee", h: "aitch", i: "eye", j: "jay", k: "kay", l: "el", m: "em",
+  n: "en", o: "oh", p: "pee", q: "cue", r: "ar", s: "ess", t: "tee", u: "you", v: "vee", w: "double you", x: "ex", y: "why", z: "zee" };
 
 const indexAt = (st, s) => Math.min(st.pts.length - 1, Math.max(0, Math.round(s / st.len * (st.pts.length - 1))));
 const pointAt = (st, s) => st.pts[indexAt(st, s)];
@@ -337,6 +385,9 @@ const STORAGE_KEY = "tracado-estrelas", SHEETS_KEY = "tracado-folhas", KIND_KEY 
 let kind = "numeros";
 try { if (SETS[localStorage.getItem(KIND_KEY)]) kind = localStorage.getItem(KIND_KEY); } catch {}
 let T = SETS[kind], G = T.G;
+// idioma da voz que fala o nome: português ou inglês (lembra a escolha neste tablet)
+let voiceLang = "pt";
+try { if (localStorage.getItem("tracado-voz") === "en") voiceLang = "en"; } catch {}
 
 // mode: "treino" (um número grande, com exemplo) ou "folha" (do 1 ao 10 pequenos, sem exemplo)
 let mode = "treino";
@@ -366,10 +417,12 @@ function speak(label) {
     const s = window.speechSynthesis;
     if (!s) return false;
     s.cancel();
-    const u = new SpeechSynthesisUtterance(NAMES[label] || String(label));
-    u.lang = "pt-BR"; u.rate = 0.85;
+    const key = String(label).toLowerCase(), en = voiceLang === "en";
+    const u = new SpeechSynthesisUtterance((en ? NAMES_EN[key] : NAMES[key]) || String(label));
+    u.lang = en ? "en-US" : "pt-BR"; u.rate = 0.85;
     const voices = s.getVoices(), low = v => (v.lang || "").replace("_", "-").toLowerCase();
-    u.voice = voices.find(v => low(v).startsWith("pt-br")) || voices.find(v => low(v).startsWith("pt")) || null;
+    const want = en ? "en-us" : "pt-br", fam = en ? "en" : "pt";
+    u.voice = voices.find(v => low(v).startsWith(want)) || voices.find(v => low(v).startsWith(fam)) || null;
     s.speak(u);
     return true;
   } catch { return false; }
@@ -428,8 +481,9 @@ function renderHeader() {
   document.title = T.title;
   $("kind-numeros").setAttribute("aria-pressed", String(kind === "numeros"));
   $("kind-letras").setAttribute("aria-pressed", String(kind === "letras"));
+  $("kind-maiusculas").setAttribute("aria-pressed", String(kind === "maiusculas"));
   document.body.classList.toggle("folha", mode === "folha");
-  document.body.classList.toggle("letras", kind === "letras");
+  document.body.classList.toggle("letras", kind !== "numeros");
   nav.hidden = mode !== "treino";
   nav.setAttribute("aria-label", "Escolher " + T.one);
   $("foot-treino").hidden = mode !== "treino";
@@ -451,7 +505,7 @@ function renderNav() {
     const b = document.createElement("button");
     b.textContent = d.label;
     b.setAttribute("aria-current", k === digitIdx ? "true" : "false");
-    b.setAttribute("aria-label", (kind === "letras" ? "Letra " : "Número ") + d.label);
+    b.setAttribute("aria-label", (kind !== "numeros" ? "Letra " : "Número ") + d.label);
     if (stars[d.label]) { const s = document.createElement("span"); s.className = "badge"; s.textContent = "★" + stars[d.label]; b.appendChild(s); }
     b.onclick = () => goTo(k);
     nav.appendChild(b);
@@ -777,6 +831,8 @@ function onUp(e) {
   if (!track) return;
   const d = G[digitIdx], st = d.strokes[strokeIdx];
   if (!reachedEnd(st, track, tol())) {
+    // fez inteiro o caminho de um traço que vem depois (no A, M e N os dois traços saem da mesma bolinha)
+    if (shadows.some(sh => reachedEnd(sh.st, sh.tr, tol()))) { fail(orderText()); return; }
     if (wanderedOff(st, track)) { fail(ERROR_TEXT["outro-caminho"]); return; }
     status = "idle"; setMsg("Continue de onde parou até a estrelinha ★"); render(); return;
   }
@@ -807,7 +863,7 @@ function finishSheetDigit() {
   const falta = G.map((d, i) => i).filter(i => !(i in sheetInk));
   if (!falta.length && !sheetCelebrated) {
     sheetCelebrated = true; sheets[kind] = (sheets[kind] || 0) + 1; save(); beep("fim");
-    setMsg((errors ? `Parabéns! Você fez ${T.done} sozinho! ★ (${errors} ${errors === 1 ? "erro" : "erros"})` : `Parabéns! Você fez ${T.done} sozinho, sem nenhum erro! ★`) + ` Pode repetir ${kind === "letras" ? "qualquer letra" : "qualquer número"}.`, "ok");
+    setMsg((errors ? `Parabéns! Você fez ${T.done} sozinho! ★ (${errors} ${errors === 1 ? "erro" : "erros"})` : `Parabéns! Você fez ${T.done} sozinho, sem nenhum erro! ★`) + ` Pode repetir ${kind !== "numeros" ? "qualquer letra" : "qualquer número"}.`, "ok");
     render(); return;
   }
   beep("ok");
@@ -826,6 +882,7 @@ $("say").onclick = sayCurrent;
 $("say-folha").onclick = sayCurrent;
 $("kind-numeros").onclick = () => setKind("numeros");
 $("kind-letras").onclick = () => setKind("letras");
+$("kind-maiusculas").onclick = () => setKind("maiusculas");
 $("prev").onclick = () => goTo(digitIdx - 1);
 $("next").onclick = () => goTo(digitIdx + 1);
 $("clear").onclick = () => { clearTimers(); resetTrace(); demo = null; status = "idle"; setMsg("Comece na bolinha ●"); render(); };
@@ -842,6 +899,19 @@ $("page-prev").onclick = () => goPage(-1);
 $("page-next").onclick = () => goPage(1);
 $("tab-treino").onclick = () => { if (mode !== "treino") setMode("treino"); };
 $("tab-folha").onclick = () => { if (mode !== "folha") setMode("folha"); };
+// idioma da voz: português ↔ inglês; fala o nome do atual no idioma novo para a criança ouvir a diferença
+const renderVoice = () => { $("voice-lang").textContent = voiceLang === "en" ? "Voz: English" : "Voz: Português"; };
+$("voice-lang").onclick = () => {
+  voiceLang = voiceLang === "en" ? "pt" : "en";
+  try { localStorage.setItem("tracado-voz", voiceLang); } catch {}
+  renderVoice();
+  // avisa se o aparelho não tem voz no idioma escolhido (as vozes podem demorar a carregar: só avisa se a lista já veio)
+  const vs = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+  const has = vs.some(v => (v.lang || "").toLowerCase().startsWith(voiceLang));
+  if (vs.length && !has) setMsg(voiceLang === "en" ? "Este aparelho não tem voz em inglês instalada. Instale nas configurações de voz do aparelho." : "Este aparelho não tem voz em português instalada.");
+  else if (sound) speak(G[digitIdx].label);
+};
+renderVoice();
 $("sound").onclick = () => {
   sound = !sound;
   $("sound").textContent = sound ? "Som: ligado" : "Som: desligado";
