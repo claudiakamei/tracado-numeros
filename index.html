@@ -1126,8 +1126,18 @@ showHome("kinds");
 </script>
 <script>
 // funciona sem internet depois da primeira visita, e o tablet recebe as atualizações sozinho
+// App salvo na tela inicial não recarrega ao voltar para ele: ao reabrir procura versão nova e, quando ela chega,
+// recarrega na tela inicial (nunca no meio de um traçado; se estiver traçando, espera voltar ao Início).
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  const hadController = !!navigator.serviceWorker.controller;
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").then(reg => {
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") reg.update().catch(() => {}); });
+  }).catch(() => {}));
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController) return; // primeira visita: nada para trocar
+    const reloadWhenHome = () => { if (inHome()) location.reload(); else setTimeout(reloadWhenHome, 2000); };
+    reloadWhenHome();
+  });
 }
 </script>
 </body>

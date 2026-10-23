@@ -1,6 +1,6 @@
 // Guarda o aplicativo no tablet para funcionar sem internet.
 // Ao publicar uma mudança, aumente a VERSAO para os tablets baixarem a versão nova.
-const VERSAO = "tracado-v16";
+const VERSAO = "tracado-v17";
 const ARQUIVOS = [
   "./",
   "index.html",
@@ -29,10 +29,10 @@ self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
-  // a página: tenta a versão nova na internet e, sem internet, usa a guardada
+  // a página: tenta a versão nova na internet (sem a cópia de 10 minutos do navegador) e, sem internet, usa a guardada
   if (req.mode === "navigate") {
     e.respondWith(
-      fetch(req)
+      fetch(req.url, { cache: "no-cache" })
         .then((res) => {
           const copia = res.clone();
           caches.open(VERSAO).then((c) => c.put("index.html", copia));
