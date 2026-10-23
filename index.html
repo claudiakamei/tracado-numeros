@@ -676,13 +676,23 @@ const cellW = d => d.width - d.x0 + CELL_PAD * 2;
 function computeLayout() {
   const CELL_H = G[0].height + CELL_PAD * 2;
   const W = Math.max(200, mainEl.clientWidth - 8), Hh = Math.max(150, mainEl.clientHeight - 8);
-  const total = G.reduce((s, d) => s + cellW(d), 0);
-  const rowsFor = limit => {
+  const all = G.map((d, i) => i);
+  const widthOf = idxs => idxs.reduce((s, i) => s + cellW(G[i]), 0);
+  const rowsFor = (limit, idxs) => {
     const rows = [[]]; let x = 0;
-    G.forEach((d, i) => {
-      if (x + cellW(d) > limit && rows[rows.length - 1].length) { rows.push([]); x = 0; }
-      rows[rows.length - 1].push(i); x += cellW(d);
+    idxs.forEach(i => {
+      if (x + cellW(G[i]) > limit && rows[rows.length - 1].length) { rows.push([]); x = 0; }
+      rows[rows.length - 1].push(i); x += cellW(G[i]);
     });
+    return rows;
+  };
+  // equilibra as linhas (evita uma linha cheia e outra com um número só)
+  const balanced = (limit, idxs) => {
+    let rows = rowsFor(limit, idxs);
+    for (let lim = widthOf(idxs) / rows.length; lim <= limit; lim += 10) {
+      const r = rowsFor(lim, idxs);
+      if (r.length <= rows.length) { rows = r; break; }
+    }
     return rows;
   };
   // px por unidade: o número fica com ~105px de altura, perto do tamanho da folha de papel.
@@ -690,31 +700,44 @@ function computeLayout() {
   const K_MIN = 0.55;
   let k = 0.75, rows;
   for (;;) {
-    rows = rowsFor(W / k);
-    // equilibra as linhas (evita uma linha cheia e outra com um número só)
-    for (let lim = total / rows.length; lim <= W / k; lim += 10) {
-      const r = rowsFor(lim);
-      if (r.length <= rows.length) { rows = r; break; }
-    }
+    rows = balanced(W / k, all);
     if (rows.length * CELL_H * k <= Hh || k <= K_MIN + 1e-9) break;
     k = Math.max(K_MIN, k - 0.05);
+  }
+  // em páginas: reparte as letras em partes iguais por página (13 e 13, não 21 e 5) e só depois monta as linhas
+  const fitRows = Math.max(1, Math.floor(Hh / (CELL_H * k)));
+  let pageRows = [rows];
+  if (rows.length > fitRows) {
+    for (let P = Math.ceil(rows.length / fitRows); P <= G.length; P++) {
+      const total = widthOf(all), chunks = [];
+      let cur = [], acc = 0;
+      all.forEach(i => {
+        // fecha a página quando passar da sua parte da largura total (a última fica com o resto)
+        if (cur.length && chunks.length < P - 1 && acc + cellW(G[i]) / 2 > total * (chunks.length + 1) / P) { chunks.push(cur); cur = []; }
+        cur.push(i); acc += cellW(G[i]);
+      });
+      chunks.push(cur);
+      pageRows = chunks.map(c => balanced(W / k, c));
+      if (pageRows.every(r => r.length <= fitRows)) break;
+    }
+    rows = pageRows.flat();
   }
   // se a tela for estreita demais até para uma célula, encolhe só o necessário para caber na largura
   const widest = Math.max(...rows.map(row => row.reduce((s, i) => s + cellW(G[i]), 0)));
   k = Math.min(k, W / widest);
-  const perPage = Math.max(1, Math.min(rows.length, Math.floor(Hh / (CELL_H * k))));
+  const perPage = Math.max(...pageRows.map(r => r.length));
   const cells = []; let width = 0;
-  rows.forEach((row, r) => {
+  pageRows.forEach((pr, pg) => pr.forEach((row, r) => {
     let x = 0;
-    const y = (r % perPage) * CELL_H;
+    const y = r * CELL_H;
     row.forEach(i => {
       const w = cellW(G[i]);
-      cells[i] = { x, y, w, h: CELL_H, ox: x + CELL_PAD - G[i].x0, oy: y + CELL_PAD, page: Math.floor(r / perPage) };
+      cells[i] = { x, y, w, h: CELL_H, ox: x + CELL_PAD - G[i].x0, oy: y + CELL_PAD, page: pg };
       x += w;
     });
     width = Math.max(width, x);
-  });
-  const pages = Math.ceil(rows.length / perPage);
+  }));
+  const pages = pageRows.length;
   page = Math.min(page, pages - 1);
   layout = { k, cells, width, height: perPage * CELL_H, pages };
 }
