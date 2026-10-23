@@ -147,6 +147,11 @@
       <button id="tab-treino" aria-pressed="true">Treino</button>
       <button id="tab-folha" aria-pressed="false">Folha 1 ao 10</button>
     </div>
+    <div class="tabs" role="group" aria-label="Ajuda no traçado">
+      <button id="lvl-ajuda" aria-pressed="true" aria-label="Com bolinha e estrelinha" title="Com bolinha e estrelinha">● ★</button>
+      <button id="lvl-comeco" aria-pressed="false" aria-label="Só a bolinha do começo" title="Só a bolinha do começo">Só ●</button>
+      <button id="lvl-livre" aria-pressed="false" aria-label="Livre, sem bolinha e sem estrelinha" title="Livre: sem bolinha e sem estrelinha">Livre</button>
+    </div>
     <button class="soft" id="novo">Novo aluno</button>
     <button class="soft" id="voice-lang" aria-label="Idioma da voz">Voz: Português</button>
     <button class="soft" id="sound" aria-pressed="true">Som: ligado</button>
@@ -388,6 +393,12 @@ let T = SETS[kind], G = T.G;
 // idioma da voz que fala o nome: português ou inglês (lembra a escolha neste tablet)
 let voiceLang = "pt";
 try { if (localStorage.getItem("tracado-voz") === "en") voiceLang = "en"; } catch {}
+// nível de ajuda: "ajuda" (bolinha e estrelinha), "comeco" (só a bolinha), "livre" (sem marcas, sem exemplo
+// e sem dicas: no erro só "Tente de novo"). A conferência do começo, do sentido e da ordem é a mesma nos três.
+const LEVELS = ["ajuda", "comeco", "livre"], LEVEL_KEY = "tracado-nivel";
+let level = "ajuda";
+try { if (LEVELS.includes(localStorage.getItem(LEVEL_KEY))) level = localStorage.getItem(LEVEL_KEY); } catch {}
+const livre = () => level === "livre";
 
 // mode: "treino" (um número grande, com exemplo) ou "folha" (do 1 ao 10 pequenos, sem exemplo)
 let mode = "treino";
@@ -463,8 +474,14 @@ function starPath(cx, cy, r) {
   return "M" + p.join(" L") + " Z";
 }
 
+// só a bolinha: as frases que falam da estrelinha passam a dizer "até o fim"
+function adapt(text) {
+  if (level !== "comeco") return text;
+  return text.replace(/da bolinha ●? ?para a estrelinha ★/g, "a partir da bolinha ●")
+    .replace(/até a estrelinha ★/g, "até o fim").replace("pela estrelinha", "pelo fim");
+}
 function setMsg(text, kind) {
-  msgEl.textContent = text;
+  msgEl.textContent = adapt(text);
   msgEl.className = kind || "";
   svg.setAttribute("class", kind || "");
 }
@@ -482,6 +499,8 @@ function renderHeader() {
   $("kind-numeros").setAttribute("aria-pressed", String(kind === "numeros"));
   $("kind-letras").setAttribute("aria-pressed", String(kind === "letras"));
   $("kind-maiusculas").setAttribute("aria-pressed", String(kind === "maiusculas"));
+  for (const l of LEVELS) $("lvl-" + l).setAttribute("aria-pressed", String(level === l));
+  $("demo").hidden = livre();
   document.body.classList.toggle("folha", mode === "folha");
   document.body.classList.toggle("letras", kind !== "numeros");
   nav.hidden = mode !== "treino";
@@ -529,6 +548,7 @@ function drawGuides(g, d, activeStroke) {
     el("path", { d: st.d, fill: "none", stroke: "var(--dash)", "stroke-width": 1.3, "stroke-dasharray": "3 3" }, g);
   });
   return () => d.strokes.forEach((st, k) => {
+    if (livre()) return; // livre: sem bolinha, estrelinha e número do traço
     const a = startOf(st), b = endOf(st);
     const m = el("g", { "pointer-events": "none" }, g);
     if (k === activeStroke) {
@@ -536,7 +556,7 @@ function drawGuides(g, d, activeStroke) {
       el("animate", { attributeName: "r", values: "7;13;7", dur: "1.2s", repeatCount: "indefinite" }, c);
       el("animate", { attributeName: "opacity", values: "1;0.3;1", dur: "1.2s", repeatCount: "indefinite" }, c);
     }
-    if (!isTap(st)) el("path", { d: starPath(b.x, b.y, 6.5), fill: "var(--mark)" }, m); // o pingo só tem a bolinha
+    if (!isTap(st) && level === "ajuda") el("path", { d: starPath(b.x, b.y, 6.5), fill: "var(--mark)" }, m); // o pingo só tem a bolinha
     el("circle", { cx: a.x, cy: a.y, r: 4.5, fill: "var(--mark)" }, m);
     if (d.strokes.length > 1) {
       // bolinhas juntas (o 5; o a, d, g, q): o número do 2º traço vai para o outro lado
@@ -687,27 +707,46 @@ function startDemo() {
 }
 function endDemo() { demo = null; status = "idle"; setMsg("Agora é sua vez! Comece na bolinha ●"); render(); }
 
+// começo de cada número no treino: com exemplo animado, ou no livre só fala o nome
+function startTurn() {
+  if (!livre()) return startDemo();
+  clearTimers(); resetTrace(); demo = null; status = "idle";
+  const d = G[digitIdx];
+  if (sound) speak(d.label);
+  setMsg(`Agora sozinho! Faça ${T.the(d.label)}`); render();
+}
+
 function goTo(idx) {
   clearTimers(); errors = 0; demo = null;
   digitIdx = (idx + G.length) % G.length;
-  renderNav(); startDemo();
+  renderNav(); startTurn();
 }
 
 function setMode(m) {
   clearTimers(); resetTrace(); demo = null; errors = 0; mode = m;
   if (m === "folha") {
     digitIdx = 0; sheetInk = {}; sheetCelebrated = false; layout = null; page = 0; status = "idle";
-    setMsg(`Agora sozinho! Escolha ${T.pick} da folha e comece na bolinha ●`);
+    setMsg(sheetText());
     render();
   } else {
-    renderNav(); startDemo();
+    renderNav(); startTurn();
   }
 }
+const sheetText = () => `Agora sozinho! Escolha ${T.pick} da folha` + (livre() ? "" : " e comece na bolinha ●");
 
 function startSheet() {
   clearTimers(); resetTrace(); errors = 0; digitIdx = 0; sheetInk = {}; sheetCelebrated = false; page = 0; status = "idle";
-  setMsg(`Agora sozinho! Escolha ${T.pick} da folha e comece na bolinha ●`);
+  setMsg(sheetText());
   render();
+}
+
+// troca o nível de ajuda: no treino recomeça o número; na folha os já feitos continuam
+function setLevel(l) {
+  if (l === level || pointerId !== null) return;
+  level = l;
+  try { localStorage.setItem(LEVEL_KEY, l); } catch {}
+  if (mode === "treino") { errors = 0; startTurn(); return; }
+  clearTimers(); resetTrace(); status = "idle"; setMsg(sheetText()); render();
 }
 
 // troca entre números e letras, mantendo o modo (treino ou folha)
@@ -719,7 +758,11 @@ function setKind(k) {
 }
 
 // ----- caneta -----
-const tol = () => mode === "folha" ? TOL_FOLHA : TOL_TREINO;
+// no livre a criança não vê a bolinha: um pouco mais de folga para encostar perto do começo
+const tol = () => {
+  const t = mode === "folha" ? TOL_FOLHA : TOL_TREINO;
+  return livre() ? { ...t, start: t.start + 8 } : t;
+};
 const offset = () => mode === "folha" ? layout.cells[digitIdx] : { ox: 0, oy: 0 };
 const local = p => { const o = offset(); return { x: p.x - o.ox, y: p.y - o.oy }; };
 
@@ -735,13 +778,14 @@ function cellAt(p) {
 }
 
 function retryText() {
+  if (livre()) return "Tente de novo";
   const d = G[digitIdx], what = mode === "folha" ? ` do ${d.label}` : "";
   return d.strokes.length > 1 ? `Tente de novo: comece na bolinha ● do traço ${strokeIdx + 1}${what}` : `Tente de novo: comece na bolinha ●${what}`;
 }
 
 function fail(text) {
   track = null; pointerId = null; bridge = null; lifting = false; status = "error"; errors++;
-  setMsg(text, "err"); beep("erro");
+  setMsg(livre() ? "Tente de novo" : text, "err"); beep("erro");
   try { navigator.vibrate && navigator.vibrate(150); } catch {}
   render(); clearTimers();
   timer = setTimeout(() => { ink = []; status = "idle"; setMsg(retryText()); render(); }, 1400);
@@ -776,7 +820,7 @@ svg.addEventListener("pointerdown", e => {
   shadows = res.s === 0 ? later.map(o => ({ st: o, tr: beginTrack(o, lp, null, tol()) })) : [];
   try { svg.setPointerCapture(e.pointerId); } catch {}
   pointerId = e.pointerId; track = res; status = "drawing";
-  setMsg("Isso! Siga o caminho até a estrelinha ★");
+  setMsg(livre() ? "✏️" : "Isso! Siga o caminho até a estrelinha ★");
   ink.push([p]); render();
 });
 
@@ -799,7 +843,7 @@ function bridgeStep(p, lp) {
   track = { s: 0, back: 0, anchor: lp, drawn: 0 };
   shadows = d.strokes.slice(strokeIdx + 1).filter(o => typeof beginTrack(o, lp, null, tol()) !== "string")
     .map(o => ({ st: o, tr: beginTrack(o, lp, null, tol()) }));
-  setMsg(`Isso! Agora o traço ${strokeIdx + 1}, até a estrelinha ★`);
+  setMsg(livre() ? "✏️" : `Isso! Agora o traço ${strokeIdx + 1}, até a estrelinha ★`);
 }
 
 svg.addEventListener("pointermove", e => {
@@ -834,12 +878,12 @@ function onUp(e) {
     // fez inteiro o caminho de um traço que vem depois (no A, M e N os dois traços saem da mesma bolinha)
     if (shadows.some(sh => reachedEnd(sh.st, sh.tr, tol()))) { fail(orderText()); return; }
     if (wanderedOff(st, track)) { fail(ERROR_TEXT["outro-caminho"]); return; }
-    status = "idle"; setMsg("Continue de onde parou até a estrelinha ★"); render(); return;
+    status = "idle"; setMsg(livre() ? "Continue de onde parou" : "Continue de onde parou até a estrelinha ★"); render(); return;
   }
   doneInk.push(ink); ink = []; track = null;
   if (strokeIdx < d.strokes.length - 1) {
     strokeIdx++; status = "idle";
-    setMsg(`Muito bem! Agora o traço ${strokeIdx + 1}: comece na bolinha ●`); beep("ok"); render(); return;
+    setMsg(livre() ? "Muito bem! Agora o próximo traço" : `Muito bem! Agora o traço ${strokeIdx + 1}: comece na bolinha ●`); beep("ok"); render(); return;
   }
   if (mode === "folha") return finishSheetDigit();
   const firstTimeAll = !allTrained();
@@ -851,7 +895,7 @@ function onUp(e) {
     timer = setTimeout(() => { setMsg(`Você treinou ${T.all}! Agora a folha ★`, "ok"); timer = setTimeout(() => setMode("folha"), 2200); }, 1500);
     return;
   }
-  timer = setTimeout(() => { resetTrace(); status = "idle"; setMsg("De novo! Comece na bolinha ●"); render(); }, 1800);
+  timer = setTimeout(() => { resetTrace(); status = "idle"; setMsg(livre() ? "De novo!" : "De novo! Comece na bolinha ●"); render(); }, 1800);
 }
 
 function finishSheetDigit() {
@@ -885,19 +929,20 @@ $("kind-letras").onclick = () => setKind("letras");
 $("kind-maiusculas").onclick = () => setKind("maiusculas");
 $("prev").onclick = () => goTo(digitIdx - 1);
 $("next").onclick = () => goTo(digitIdx + 1);
-$("clear").onclick = () => { clearTimers(); resetTrace(); demo = null; status = "idle"; setMsg("Comece na bolinha ●"); render(); };
+$("clear").onclick = () => { clearTimers(); resetTrace(); demo = null; status = "idle"; setMsg(livre() ? "Pode começar" : "Comece na bolinha ●"); render(); };
 $("sheet-restart").onclick = startSheet;
 // folha em páginas (celular): trocar de página deixa para depois o traço que estava pela metade
 const goPage = delta => {
   if (!layout || pointerId !== null) return;
   page = Math.max(0, Math.min(layout.pages - 1, page + delta));
   resetTrace(); status = "idle";
-  setMsg(`Escolha ${T.pick} desta página e comece na bolinha ●`);
+  setMsg(`Escolha ${T.pick} desta página` + (livre() ? "" : " e comece na bolinha ●"));
   render();
 };
 $("page-prev").onclick = () => goPage(-1);
 $("page-next").onclick = () => goPage(1);
-$("tab-treino").onclick = () => { if (mode !== "treino") setMode("treino"); };
+for (const l of LEVELS) $("lvl-" + l).onclick = () => setLevel(l);
+$("tab-treino").onclick =() => { if (mode !== "treino") setMode("treino"); };
 $("tab-folha").onclick = () => { if (mode !== "folha") setMode("folha"); };
 // idioma da voz: português ↔ inglês; fala o nome do atual no idioma novo para a criança ouvir a diferença
 const renderVoice = () => { $("voice-lang").textContent = voiceLang === "en" ? "Voz: English" : "Voz: Português"; };
@@ -944,7 +989,7 @@ async function keepAwake() { try { await navigator.wakeLock.request("screen"); }
 keepAwake();
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") keepAwake(); });
 
-renderNav(); startDemo();
+renderNav(); startTurn();
 </script>
 <script>
 // funciona sem internet depois da primeira visita, e o tablet recebe as atualizações sozinho
