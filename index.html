@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="description" content="Treino de traçado de números (1 a 10) e letras minúsculas (a a z) com caneta no tablet: exemplo animado da bolinha à estrelinha, aviso de sentido e ordem errados, nome falado e folha em tamanho menor.">
+<meta name="description" content="Treino de traçado de números (1 a 10) e letras minúsculas e maiúsculas com caneta no tablet: exemplo animado da bolinha à estrelinha, aviso de sentido e ordem errados, nome falado e folha em tamanho menor.">
 <meta name="theme-color" content="#1f6fb2">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,7 +15,7 @@
 <title>Traçado de Números 1 ~ 10</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Comic+Neue:wght@700&family=Nunito:wght@600;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Comic+Neue:wght@700&family=Dancing+Script:wght@700&family=Nunito:wght@600;800&display=swap">
 <style>
   /* Layout: uma tela só, como uma folha de exercício — modos no alto, folha no centro, botões grandes embaixo.
      Treino: um número grande por vez. Folha: do 1 ao 10 pequenos, lado a lado, como a folha de papel. */
@@ -131,6 +131,48 @@
   .credit { align-self: flex-end; display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--muted); text-decoration: none; margin-top: -4px; }
   .credit img { height: 28px; width: auto; background: #fff; border-radius: 6px; padding: 2px 5px; }
   .credit:hover span, .credit:focus-visible span { text-decoration: underline; }
+  /* tela inicial: cartões grandes e coloridos para escolher o que treinar e depois o modo */
+  body.home nav, body.home #msg, body.home main, body.home footer, body.home .tabs, body.home #home-btn { display: none !important; }
+  #home { flex: 1; min-height: 0; overflow: auto; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(14px, 3vh, 30px); padding: 10px 0; }
+  .home-hello { position: relative; z-index: 1; margin: 0; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.5rem, 4vw, 2.6rem); line-height: 1.15; }
+  .home-grid { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(12px, 2.4vw, 26px); width: min(100%, 1000px); padding: 10px 6px; }
+  @media (min-width: 900px) { #home-kinds { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  #home-modes { width: min(100%, 720px); }
+  .card {
+    position: relative; border: 0; border-radius: 28px; padding: clamp(16px, 3vw, 30px) 12px; color: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    font-family: var(--font-display); box-shadow: 0 7px 0 rgba(0, 0, 0, 0.2); transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .card:hover:not(:disabled) { transform: translateY(-4px) rotate(-1.5deg); }
+  .card:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2); }
+  .c1 { background: #ef6239; } .c2 { background: #1f86cc; } .c3 { background: #16996a; } .c4 { background: #8a57cf; }
+  .card .glyph {
+    font-weight: 800; font-size: clamp(2.6rem, 7vw, 4.6rem); line-height: 1.05; padding: 0.12em 0.4em; border-radius: 22px;
+    background: rgba(255, 255, 255, 0.22); animation: pula 2.4s ease-in-out infinite; white-space: nowrap;
+  }
+  .c2 .glyph { animation-delay: 0.3s; } .c3 .glyph { animation-delay: 0.6s; } .c4 .glyph { animation-delay: 0.9s; }
+  .card .glyph.letra { font-family: "Comic Neue", "Comic Sans MS", cursive; font-weight: 700; }
+  .card .glyph.cursiva { font-family: "Dancing Script", cursive; font-weight: 700; }
+  .card .glyph.folha { font-size: clamp(1.8rem, 4.6vw, 3rem); letter-spacing: 0.08em; }
+  .card .name { font-weight: 800; font-size: clamp(1.15rem, 2.4vw, 1.55rem); line-height: 1.15; text-align: center; }
+  .card .sub { font-family: var(--font-body); font-weight: 700; font-size: clamp(0.85rem, 1.8vw, 1rem); opacity: 0.95; text-align: center; }
+  .card:disabled { cursor: default; filter: saturate(0.5); opacity: 0.7; }
+  .card .soon {
+    position: absolute; top: -10px; right: -6px; transform: rotate(6deg); background: var(--star); color: #1d2a33;
+    font-family: var(--font-body); font-weight: 800; font-size: 0.8rem; padding: 3px 10px; border-radius: 999px;
+  }
+  .back { grid-column: 1 / -1; justify-self: center; font-size: 1.05rem; padding: 10px 22px; }
+  .home-deco { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .home-deco span { position: absolute; font-family: var(--font-display); font-weight: 800; opacity: 0.16; animation: flutua 7s ease-in-out infinite; }
+  @keyframes pula { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  @keyframes flutua { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-14px) rotate(8deg); } }
+  @media (max-width: 640px), (max-height: 520px) {
+    .card { border-radius: 22px; padding: 14px 8px; gap: 6px; }
+    .card .glyph { font-size: 2.3rem; border-radius: 16px; }
+    .card .glyph.folha { font-size: 1.6rem; }
+    .card .name { font-size: 1.05rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { .card .glyph, .home-deco span { animation: none; } .card:hover:not(:disabled) { transform: none; } }
   @media (prefers-reduced-motion: reduce) { .pulse { display: none; } .tabs button.ready { animation: none; box-shadow: 0 0 0 3px var(--star); } }
 </style>
 </head>
@@ -138,11 +180,7 @@
 <header>
   <h1 id="title">Traçado de Números 1 ~ 10</h1>
   <div class="tools">
-    <div class="tabs" role="group" aria-label="Números ou letras">
-      <button id="kind-numeros" aria-pressed="true" aria-label="Números">123</button>
-      <button id="kind-letras" aria-pressed="false" aria-label="Letras minúsculas">abc</button>
-      <button id="kind-maiusculas" aria-pressed="false" aria-label="Letras maiúsculas">ABC</button>
-    </div>
+    <button class="soft" id="home-btn">⌂ Início</button>
     <div class="tabs" role="group" aria-label="Modo">
       <button id="tab-treino" aria-pressed="true">Treino</button>
       <button id="tab-folha" aria-pressed="false">Folha 1 ao 10</button>
@@ -157,6 +195,28 @@
     <button class="soft" id="sound" aria-pressed="true">Som: ligado</button>
   </div>
 </header>
+<section id="home" hidden>
+  <div class="home-deco" aria-hidden="true">
+    <span style="left:4%;top:8%;font-size:3.2rem;color:var(--star)">★</span>
+    <span style="right:6%;top:6%;font-size:3rem;color:#ef6239;animation-delay:1s">3</span>
+    <span style="left:8%;bottom:10%;font-size:3.4rem;color:#1f86cc;animation-delay:2s">a</span>
+    <span style="right:5%;bottom:14%;font-size:3rem;color:#16996a;animation-delay:3s">B</span>
+    <span style="left:46%;top:2%;font-size:2rem;color:#8a57cf;animation-delay:1.5s">●</span>
+    <span style="right:30%;bottom:3%;font-size:2.4rem;color:var(--star);animation-delay:2.5s">★</span>
+  </div>
+  <p class="home-hello" id="home-hello">Oba! O que vamos traçar hoje?</p>
+  <div class="home-grid" id="home-kinds">
+    <button class="card c1" data-kind="numeros"><span class="glyph">123</span><span class="name">Números</span></button>
+    <button class="card c2" data-kind="letras"><span class="glyph letra">abc</span><span class="name">Letras minúsculas</span></button>
+    <button class="card c3" data-kind="maiusculas"><span class="glyph letra">ABC</span><span class="name">Letras maiúsculas</span></button>
+    <button class="card c4" disabled><span class="glyph cursiva">abc</span><span class="name">Letras cursivas</span><span class="soon">Em breve</span></button>
+  </div>
+  <div class="home-grid" id="home-modes" hidden>
+    <button class="card c1" id="go-treino"><span class="glyph" id="treino-glyph">1</span><span class="name">Treino</span><span class="sub">um a um, com exemplo</span></button>
+    <button class="card c2" id="go-folha"><span class="glyph folha" id="folha-glyph">1 2 3</span><span class="name" id="folha-name">Folha 1 ao 10</span><span class="sub">todos na mesma folha</span></button>
+    <button class="soft back" id="home-back">← Voltar</button>
+  </div>
+</section>
 <nav id="digits" aria-label="Escolher número"></nav>
 <div id="msg" role="status">Veja o exemplo e depois faça você!</div>
 <main><svg id="sheet" xmlns="http://www.w3.org/2000/svg" aria-label="Folha de traçado"></svg></main>
@@ -496,9 +556,6 @@ function renderHeader() {
   tF.textContent = T.folha;
   $("title").textContent = T.title;
   document.title = T.title;
-  $("kind-numeros").setAttribute("aria-pressed", String(kind === "numeros"));
-  $("kind-letras").setAttribute("aria-pressed", String(kind === "letras"));
-  $("kind-maiusculas").setAttribute("aria-pressed", String(kind === "maiusculas"));
   for (const l of LEVELS) $("lvl-" + l).setAttribute("aria-pressed", String(level === l));
   $("demo").hidden = livre();
   document.body.classList.toggle("folha", mode === "folha");
@@ -749,13 +806,50 @@ function setLevel(l) {
   clearTimers(); resetTrace(); status = "idle"; setMsg(sheetText()); render();
 }
 
-// troca entre números e letras, mantendo o modo (treino ou folha)
-function setKind(k) {
-  if (k === kind) return;
-  kind = k; T = SETS[k]; G = T.G; digitIdx = 0; layout = null; page = 0;
-  try { localStorage.setItem(KIND_KEY, k); } catch {}
-  setMode(mode);
+// troca entre números e letras e entra no modo escolhido (treino ou folha)
+function setKind(k, m = mode) {
+  if (k !== kind) {
+    kind = k; T = SETS[k]; G = T.G; digitIdx = 0; layout = null; page = 0;
+    try { localStorage.setItem(KIND_KEY, k); } catch {}
+  }
+  setMode(m);
 }
+
+// ----- tela inicial -----
+// passo 1: números, minúsculas, maiúsculas (cursiva em breve); passo 2: treino ou folha
+const KIND_NAMES = { numeros: "Números", letras: "Letras minúsculas", maiusculas: "Letras maiúsculas" };
+const inHome = () => document.body.classList.contains("home");
+function showHome(step = "kinds") {
+  clearTimers(); resetTrace(); demo = null; status = "idle";
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  document.body.classList.add("home");
+  $("home").hidden = false;
+  $("home-kinds").hidden = step !== "kinds";
+  $("home-modes").hidden = step !== "modes";
+  const title = step === "kinds" ? "Traçado" : KIND_NAMES[kind];
+  $("title").textContent = title; document.title = step === "kinds" ? "Traçado de Números e Letras" : T.title;
+  if (step === "kinds") { $("home-hello").textContent = "Oba! O que vamos traçar hoje?"; return; }
+  $("home-hello").textContent = "Como você quer treinar?";
+  const first = G.slice(0, 3).map(d => d.label);
+  $("treino-glyph").textContent = first[0];
+  $("folha-glyph").textContent = first.join(" ") + " …";
+  $("folha-name").textContent = T.folha;
+  for (const id of ["treino-glyph", "folha-glyph"]) $(id).classList.toggle("letra", kind !== "numeros");
+}
+function leaveHome(m) {
+  document.body.classList.remove("home");
+  $("home").hidden = true;
+  setKind(kind, m);
+}
+document.querySelectorAll("#home-kinds [data-kind]").forEach(b => b.onclick = () => {
+  const k = b.dataset.kind;
+  if (k !== kind) { kind = k; T = SETS[k]; G = T.G; digitIdx = 0; layout = null; page = 0; try { localStorage.setItem(KIND_KEY, k); } catch {} }
+  showHome("modes");
+});
+$("go-treino").onclick = () => leaveHome("treino");
+$("go-folha").onclick = () => leaveHome("folha");
+$("home-back").onclick = () => showHome("kinds");
+$("home-btn").onclick = () => { if (pointerId === null) showHome("kinds"); };
 
 // ----- caneta -----
 // no livre a criança não vê a bolinha: um pouco mais de folga para encostar perto do começo
@@ -924,9 +1018,6 @@ svg.addEventListener("contextmenu", e => e.preventDefault());
 $("demo").onclick = startDemo;
 $("say").onclick = sayCurrent;
 $("say-folha").onclick = sayCurrent;
-$("kind-numeros").onclick = () => setKind("numeros");
-$("kind-letras").onclick = () => setKind("letras");
-$("kind-maiusculas").onclick = () => setKind("maiusculas");
 $("prev").onclick = () => goTo(digitIdx - 1);
 $("next").onclick = () => goTo(digitIdx + 1);
 $("clear").onclick = () => { clearTimers(); resetTrace(); demo = null; status = "idle"; setMsg(livre() ? "Pode começar" : "Comece na bolinha ●"); render(); };
@@ -954,7 +1045,7 @@ $("voice-lang").onclick = () => {
   const vs = window.speechSynthesis ? speechSynthesis.getVoices() : [];
   const has = vs.some(v => (v.lang || "").toLowerCase().startsWith(voiceLang));
   if (vs.length && !has) setMsg(voiceLang === "en" ? "Este aparelho não tem voz em inglês instalada. Instale nas configurações de voz do aparelho." : "Este aparelho não tem voz em português instalada.");
-  else if (sound) speak(G[digitIdx].label);
+  else if (sound && !inHome()) speak(G[digitIdx].label);
 };
 renderVoice();
 $("sound").onclick = () => {
@@ -974,6 +1065,7 @@ $("novo").onclick = () => {
   }
   clearTimeout(novoTimer); b.classList.remove("warn"); b.textContent = "Novo aluno";
   stars = {}; sheets = {}; save();
+  if (inHome()) { b.textContent = "Zerado ✓"; novoTimer = setTimeout(() => { b.textContent = "Novo aluno"; }, 1500); return; }
   mode = "treino"; setMode("treino"); goTo(0);
 };
 
@@ -981,7 +1073,7 @@ let resizeTimer = null;
 window.addEventListener("resize", () => {
   clearTimeout(resizeTimer);
   // o traço pela metade é refeito (as posições mudam); os já terminados continuam no lugar
-  resizeTimer = setTimeout(() => { if (mode === "folha" && pointerId === null) { layout = null; resetTrace(); render(); } }, 150);
+  resizeTimer = setTimeout(() => { if (mode === "folha" && pointerId === null && !inHome()) { layout = null; resetTrace(); render(); } }, 150);
 });
 
 // mantém a tela do tablet acesa enquanto o aluno treina
@@ -989,7 +1081,7 @@ async function keepAwake() { try { await navigator.wakeLock.request("screen"); }
 keepAwake();
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") keepAwake(); });
 
-renderNav(); startTurn();
+showHome("kinds");
 </script>
 <script>
 // funciona sem internet depois da primeira visita, e o tablet recebe as atualizações sozinho
