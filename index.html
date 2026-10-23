@@ -697,7 +697,9 @@ function computeLayout() {
   };
   // px por unidade: o número fica com ~105px de altura, perto do tamanho da folha de papel.
   // Nunca diminui abaixo de K_MIN (no celular as letras ficariam minúsculas): se não couber, a folha vira páginas.
-  const K_MIN = 0.55;
+  // A minúscula só ocupa o meio do quadradinho (em cima e embaixo é lugar das hastes do b e do g):
+  // encolhida como a maiúscula, o a, o c e o e ficariam miúdos. Por isso ela não diminui: vira páginas.
+  const K_MIN = kind === "letras" ? 0.75 : 0.55;
   let k = 0.75, rows;
   for (;;) {
     rows = balanced(W / k, all);
