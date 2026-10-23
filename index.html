@@ -130,7 +130,6 @@
   /* crédito discreto no canto, com a logo num fundo claro (a logo tem letras escuras) */
   .credit { align-self: flex-end; display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--muted); text-decoration: none; margin-top: -4px; }
   .credit img { height: 28px; width: auto; background: #fff; border-radius: 6px; padding: 2px 5px; }
-  .credit:hover span, .credit:focus-visible span { text-decoration: underline; }
   /* tela inicial: cartões grandes e coloridos para escolher o que treinar e depois o modo */
   body.home nav, body.home #msg, body.home main, body.home footer, body.home .tabs, body.home #home-btn { display: none !important; }
   #home { flex: 1; min-height: 0; overflow: auto; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(14px, 3vh, 30px); padding: 10px 0; }
@@ -236,10 +235,10 @@
   <button id="sheet-restart">Apagar a folha</button>
   <span class="count" id="sheet-count"></span>
 </footer>
-<a class="credit" href="https://kameiflow.com" target="_blank" rel="noopener">
+<div class="credit">
   <span>Desenvolvido por</span>
   <img src="icons/kamei-flow-logo.png" alt="Kamei Flow" width="360" height="153">
-</a>
+</div>
 
 <script>
 // ---------- caminhos e conferência ----------
