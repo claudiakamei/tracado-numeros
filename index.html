@@ -129,7 +129,10 @@
     /* treino no celular: cabeçalho e botões numa linha só, para sobrar a tela para a letra */
     body:not(.home) h1 { display: none; }
     header .tools { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; width: 100%; padding-bottom: 2px; }
-    header .tools > * { flex: none; }
+    header .tools > * { flex: none; order: 2; }
+    /* o nível de ajuda fica sempre à vista, logo depois do Início (o resto da faixa rola para o lado) */
+    header #home-btn { order: 0; }
+    header #levels { order: 1; }
     #foot-treino { flex-wrap: nowrap; }
     #foot-treino .lbl, #foot-treino .count { display: none; }
   }
@@ -192,7 +195,7 @@
       <button id="tab-treino" aria-pressed="true">Treino</button>
       <button id="tab-folha" aria-pressed="false">Folha 1 ao 10</button>
     </div>
-    <div class="tabs" role="group" aria-label="Ajuda no traçado">
+    <div class="tabs" id="levels" role="group" aria-label="Ajuda no traçado">
       <button id="lvl-ajuda" aria-pressed="true" aria-label="Com bolinha e estrelinha" title="Com bolinha e estrelinha">● ★</button>
       <button id="lvl-comeco" aria-pressed="false" aria-label="Só a bolinha do começo" title="Só a bolinha do começo">Só ●</button>
       <button id="lvl-livre" aria-pressed="false" aria-label="Livre, sem bolinha e sem estrelinha" title="Livre: sem bolinha e sem estrelinha">Livre</button>
