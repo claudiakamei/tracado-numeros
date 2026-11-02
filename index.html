@@ -390,7 +390,8 @@ const SETS = {
 const NAMES = { 1: "um", 2: "dois", 3: "três", 4: "quatro", 5: "cinco", 6: "seis", 7: "sete", 8: "oito", 9: "nove", 10: "dez",
   a: "ah", b: "bê", c: "cê", d: "dê", e: "eh", f: "éfe", g: "gê", h: "agá", i: "ih", j: "jota", k: "cá", l: "éle", m: "ême",
   n: "êne", o: "oh", p: "pê", q: "quê", r: "érre", s: "ésse", t: "tê", u: "uh", v: "vê", w: "dáblio", x: "xis", y: "ípsilon", z: "zê" };
-// Em inglês (botão "Voz"): escrito como se fala, para a voz não ler a letra como palavra (ex.: "a" como artigo)
+// Em inglês (botão "Voz") o app toca as gravações de audio/en; este texto só é usado se a gravação falhar.
+// Escrito como se fala, para a voz não ler a letra como palavra (ex.: "a" como artigo)
 const NAMES_EN = { 1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten",
   a: "ay", b: "bee", c: "see", d: "dee", e: "ee", f: "ef", g: "jee", h: "aitch", i: "eye", j: "jay", k: "kay", l: "el", m: "em",
   n: "en", o: "oh", p: "pee", q: "cue", r: "ar", s: "ess", t: "tee", u: "you", v: "vee", w: "double you", x: "ex", y: "why", z: "zee" };
@@ -490,7 +491,21 @@ try {
 const save = () => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(stars)); localStorage.setItem(SHEETS_KEY, JSON.stringify(sheets)); } catch {} };
 
 // voz do tablet falando o nome do número ou da letra
+// Inglês: gravações prontas (voz americana) em audio/en, porque muitos celulares não têm voz em inglês
+// e leem "one" e as letras com a voz em português. A voz do aparelho fica só como reserva.
+const enAudio = {};
 function speak(label) {
+  const key = String(label).toLowerCase(), en = voiceLang === "en";
+  if (en && NAMES_EN[key]) {
+    try { window.speechSynthesis && speechSynthesis.cancel(); } catch {}
+    const a = enAudio[key] ??= new Audio(`audio/en/${key}.wav`);
+    try { a.currentTime = 0; } catch {}
+    a.play().catch(() => speakTts(label));
+    return true;
+  }
+  return speakTts(label);
+}
+function speakTts(label) {
   try {
     const s = window.speechSynthesis;
     if (!s) return false;
@@ -1080,10 +1095,11 @@ $("voice-lang").onclick = () => {
   voiceLang = voiceLang === "en" ? "pt" : "en";
   try { localStorage.setItem("tracado-voz", voiceLang); } catch {}
   renderVoice();
-  // avisa se o aparelho não tem voz no idioma escolhido (as vozes podem demorar a carregar: só avisa se a lista já veio)
+  // o inglês vem das gravações do app; só o português depende da voz do aparelho
+  // (as vozes podem demorar a carregar: só avisa se a lista já veio)
   const vs = window.speechSynthesis ? speechSynthesis.getVoices() : [];
-  const has = vs.some(v => (v.lang || "").toLowerCase().startsWith(voiceLang));
-  if (vs.length && !has) setMsg(voiceLang === "en" ? "Este aparelho não tem voz em inglês instalada. Instale nas configurações de voz do aparelho." : "Este aparelho não tem voz em português instalada.");
+  const semPt = voiceLang === "pt" && vs.length && !vs.some(v => (v.lang || "").toLowerCase().startsWith("pt"));
+  if (semPt) setMsg("Este aparelho não tem voz em português instalada.");
   else if (sound && !inHome()) speak(G[digitIdx].label);
 };
 renderVoice();
