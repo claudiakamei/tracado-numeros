@@ -175,12 +175,12 @@
   .achados span { border: 2px solid var(--ok); color: var(--ok); border-radius: 999px; padding: 2px 12px; font-family: var(--font-display); font-weight: 800; }
   .bol-niveis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; width: min(100%, 560px); margin: auto 0; }
   .bol-topo { display: flex; justify-content: space-between; width: min(100%, 720px); font-weight: 800; color: var(--muted); }
-  .bol-quadros { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; transition: border-color 0.2s; }
+  .bol-quadros { display: flex; justify-content: center; transition: border-color 0.2s; }
   .bol-quadros.certo { border-color: var(--ok); } .bol-quadros.errado { border-color: var(--err); }
-  .quadro10 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; padding: 8px; border: 2px solid var(--line); border-radius: 14px; }
-  .quadro10 i { width: var(--bol, 44px); height: var(--bol, 44px); border-radius: 50%; border: 2px dashed var(--line); }
-  .quadro10 i.cheia { border: 0; background: #ef6239; }
-  .quadro10 i.cheia.b { background: #1f86cc; }
+  /* como a folha Leitura de Bolinhas: fileiras de 5, uma embaixo da outra, a última incompleta à esquerda;
+     a altura fica a do maior número do nível, para os botões não pularem de lugar */
+  .bolinhas { display: grid; grid-template-columns: repeat(5, var(--bol, 44px)); grid-auto-rows: var(--bol, 44px); gap: calc(var(--bol, 44px) * 0.22); }
+  .bolinhas i { border-radius: 50%; background: #d7263d; }
   .bol-opcoes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; width: min(100%, 560px); }
   .bol-opcoes button { font-family: var(--font-display); font-weight: 800; font-size: 2rem; padding: 8px 0; border: 2px solid var(--line); background: var(--sheet); }
   .bol-opcoes button.certo { background: var(--ok); border-color: var(--ok); color: #fff; }
@@ -190,7 +190,7 @@
   .bol-fim-pontos { margin: 6px 0 16px; font-family: var(--font-display); font-weight: 800; font-size: 3rem; }
   .bol-fim-botoes { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
   @media (max-width: 640px), (max-height: 520px) {
-    .quadro10 { gap: 4px; padding: 6px; } .bol-opcoes button { font-size: 1.6rem; }
+    .bol-opcoes button { font-size: 1.6rem; }
     .pares-alvo b { width: 3.6rem; height: 3.6rem; font-size: 2rem; }
     .pares-col { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
     .pares-area { gap: 6px; } .jogo-board { padding: 12px 10px; }
@@ -1170,8 +1170,8 @@ function paresToque(lado, n, b) {
 }
 $("go-pares").onclick = () => { abrirJogo("jogo-pares", "Encontre os pares"); paresComecar(paresAlvo); };
 
-// Conta as bolinhas: quadros de 10 (duas fileiras de 5), cada grupo de 5 numa cor e os lugares vazios
-// marcados — a criança vê "5 e mais 2" e quanto falta para o 10. Escolhe entre 4 números.
+// Conta as bolinhas: bolinhas vermelhas em fileiras de 5, como a folha Leitura de Bolinhas da unidade
+// (a criança lê "5, 10 e mais 3"). Escolhe entre 4 números.
 const BOL_NIVEIS = { 10: { nome: "Nível 1 (até 10)", max: 10, rodadas: 8, perto: 3 }, 20: { nome: "Nível 2 (até 20)", max: 20, rodadas: 10, perto: 4 } };
 const BOL_KEY = "jogo-bolinhas-melhor";
 let bolMelhor = lerJSON(BOL_KEY, {}), bol = null;
@@ -1198,16 +1198,13 @@ function bolRodada() {
     const c = q + (Math.random() < 0.5 ? -1 : 1) * (1 + Math.floor(Math.random() * n.perto));
     if (c >= 1 && c <= n.max) ops.add(c);
   }
-  // quadros: um por dezena; as 5 primeiras de cada quadro numa cor, as 5 seguintes em outra
+  // fileiras de 5; o espaço é o do maior número do nível (2 fileiras até 10, 4 até 20)
   const box = $("bol-quadros"); box.innerHTML = ""; box.className = "jogo-board bol-quadros";
-  // tamanho da bolinha: cabe na largura da tela (5 por fileira; até 20 são dois quadros lado a lado no tablet,
-  // e no celular um embaixo do outro, com bolinhas maiores)
-  box.style.setProperty("--bol", bol.k === 10 ? "clamp(30px, 9vw, 70px)" : PHONE.matches ? "clamp(26px, 8vw, 40px)" : "clamp(22px, 4.4vw, 50px)");
-  for (let d = 0; d < n.max / 10; d++) {
-    const qd = document.createElement("div"); qd.className = "quadro10";
-    for (let i = 0; i < 10; i++) { const b = document.createElement("i"); if (d * 10 + i < q) b.className = "cheia" + (i >= 5 ? " b" : ""); qd.appendChild(b); }
-    box.appendChild(qd);
-  }
+  box.style.setProperty("--bol", bol.k === 10 ? "clamp(34px, 10vw, 72px)" : "clamp(30px, min(8vw, 7vh), 58px)");
+  const grade = document.createElement("div"); grade.className = "bolinhas";
+  grade.style.gridTemplateRows = `repeat(${n.max / 5}, var(--bol))`;
+  for (let i = 0; i < q; i++) grade.appendChild(document.createElement("i"));
+  box.appendChild(grade);
   const opBox = $("bol-opcoes"); opBox.innerHTML = "";
   embaralha([...ops].sort((a, b) => a - b)).forEach(v => {
     const b = document.createElement("button"); b.textContent = v; b.onclick = () => bolResposta(v, b); opBox.appendChild(b);
