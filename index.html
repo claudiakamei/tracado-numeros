@@ -141,6 +141,60 @@
   .credit img { height: 28px; width: auto; background: #fff; border-radius: 6px; padding: 2px 5px; }
   /* tela inicial: cartões grandes e coloridos para escolher o que treinar e depois o modo */
   body.home nav, body.home #msg, body.home main, body.home footer, body.home .tabs, body.home #home-btn { display: none !important; }
+  /* jogos de números: usam a faixa de mensagem e o Início; escondem o que é do traçado */
+  body.em-jogo nav, body.em-jogo main, body.em-jogo footer, body.em-jogo .tabs { display: none !important; }
+  /* a faixa de mensagem fica logo abaixo do cabeçalho, acima do jogo */
+  body.em-jogo header { order: 0; } body.em-jogo #msg { order: 1; } body.em-jogo .jogo { order: 2; } body.em-jogo .credit { order: 3; }
+  #bol-jogo { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; margin: auto 0; }
+  .home-sub { position: relative; z-index: 1; margin: 4px 0 -6px; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.1rem, 2.6vw, 1.5rem); color: var(--muted); }
+  #home-games { width: min(100%, 640px); }
+  .c6 { background: #d9822b; } .c7 { background: #2f8f9d; }
+  .card .glyph.dots-glyph { font-size: clamp(1rem, 2.6vw, 1.5rem); line-height: 1.1; letter-spacing: 0.08em; padding: 0.35em 0.5em; }
+  .jogo { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 4px 0; }
+  .jogo-board { width: min(100%, 720px); background: var(--sheet); border: 2px solid var(--line); border-radius: 24px; padding: 16px; }
+  .niveis { display: flex; gap: 6px; overflow-x: auto; max-width: 100%; padding: 8px 4px 4px; scrollbar-width: none; }
+  .niveis button { position: relative; flex: none; min-width: 2.8rem; padding: 4px 8px; font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; background: var(--sheet); border: 2px solid var(--line); }
+  .niveis button[aria-current="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .niveis button.feito::after { content: "✓"; position: absolute; top: -8px; right: -6px; background: var(--ok); color: #fff; border-radius: 999px; font-size: 0.7rem; padding: 1px 5px; }
+  .pares-alvo { display: flex; align-items: center; justify-content: center; gap: 14px; font-weight: 800; color: var(--muted); text-align: right; }
+  .pares-alvo b { font-family: var(--font-display); font-size: 2.6rem; color: #fff; background: #ef6239; width: 4.6rem; height: 4.6rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .pares-alvo b.pulsa { animation: pulsa 0.5s ease; }
+  @keyframes pulsa { 40% { transform: scale(1.18); } }
+  .barra { height: 10px; background: var(--band); border-radius: 6px; overflow: hidden; margin: 12px 0; }
+  .barra div { height: 100%; width: 0; background: var(--ok); transition: width 0.4s; }
+  .pares-area { display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .pares-col { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; flex: 1; max-width: 300px; }
+  .pares-col button { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.1rem, 3vw, 1.5rem); padding: 6px 0; border: 2px solid var(--line); background: var(--bg); border-radius: 12px; }
+  .pares-col button.sel { border-color: var(--accent); background: var(--info-soft); color: var(--accent); }
+  .pares-col button.usado { border-color: var(--ok); background: var(--ok-soft); color: var(--ok); opacity: 0.55; pointer-events: none; }
+  .pares-col button.treme { animation: treme 0.35s; border-color: var(--err); background: var(--err-soft); }
+  @keyframes treme { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+  .pares-mais { font-family: var(--font-display); font-weight: 800; font-size: 2rem; color: var(--muted); }
+  .achados-titulo { margin: 14px 0 6px; font-weight: 800; color: var(--muted); font-size: 0.95rem; }
+  .achados { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; }
+  .achados span { border: 2px solid var(--ok); color: var(--ok); border-radius: 999px; padding: 2px 12px; font-family: var(--font-display); font-weight: 800; }
+  .bol-niveis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; width: min(100%, 560px); margin: auto 0; }
+  .bol-topo { display: flex; justify-content: space-between; width: min(100%, 720px); font-weight: 800; color: var(--muted); }
+  .bol-quadros { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; transition: border-color 0.2s; }
+  .bol-quadros.certo { border-color: var(--ok); } .bol-quadros.errado { border-color: var(--err); }
+  .quadro10 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; padding: 8px; border: 2px solid var(--line); border-radius: 14px; }
+  .quadro10 i { width: var(--bol, 44px); height: var(--bol, 44px); border-radius: 50%; border: 2px dashed var(--line); }
+  .quadro10 i.cheia { border: 0; background: #ef6239; }
+  .quadro10 i.cheia.b { background: #1f86cc; }
+  .bol-opcoes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; width: min(100%, 560px); }
+  .bol-opcoes button { font-family: var(--font-display); font-weight: 800; font-size: 2rem; padding: 8px 0; border: 2px solid var(--line); background: var(--sheet); }
+  .bol-opcoes button.certo { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .bol-opcoes button.errado { background: var(--err-soft); border-color: var(--err); color: var(--err); }
+  .bol-fim { text-align: center; margin: auto 0; max-width: 420px; }
+  .bol-fim-nivel { margin: 0; font-weight: 800; color: var(--muted); }
+  .bol-fim-pontos { margin: 6px 0 16px; font-family: var(--font-display); font-weight: 800; font-size: 3rem; }
+  .bol-fim-botoes { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  @media (max-width: 640px), (max-height: 520px) {
+    .quadro10 { gap: 4px; padding: 6px; } .bol-opcoes button { font-size: 1.6rem; }
+    .pares-alvo b { width: 3.6rem; height: 3.6rem; font-size: 2rem; }
+    .pares-col { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+    .pares-area { gap: 6px; } .jogo-board { padding: 12px 10px; }
+  }
   #home { flex: 1; min-height: 0; overflow: auto; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(14px, 3vh, 30px); padding: 10px 0; }
   .home-hello { position: relative; z-index: 1; margin: 0; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.5rem, 4vw, 2.6rem); line-height: 1.15; }
   .home-grid { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(12px, 2.4vw, 26px); width: min(100%, 1000px); padding: 10px 6px; }
@@ -226,6 +280,40 @@
     <button class="card c1" id="go-treino"><span class="glyph" id="treino-glyph">1</span><span class="name">Treino</span><span class="sub">um a um, com exemplo</span></button>
     <button class="card c2" id="go-folha"><span class="glyph folha" id="folha-glyph">1 2 3</span><span class="name" id="folha-name">Folha 1 ao 10</span><span class="sub">todos na mesma folha</span></button>
     <button class="soft back" id="home-back">← Voltar</button>
+  </div>
+  <p class="home-sub" id="home-games-title">Jogos de números</p>
+  <div class="home-grid" id="home-games">
+    <button class="card c6" id="go-pares"><span class="glyph">3+8</span><span class="name">Encontre os pares</span><span class="sub">somas para a subtração</span></button>
+    <button class="card c7" id="go-bolinhas"><span class="glyph dots-glyph" aria-hidden="true">●●●●●<br>●●</span><span class="name">Conta as bolinhas</span><span class="sub">quantidade e o 5</span></button>
+  </div>
+</section>
+<!-- Jogo: encontre os pares que somam o número-alvo (prepara a subtração: 11 − 2 = 9 porque 2 + 9 = 11) -->
+<section id="jogo-pares" class="jogo" hidden>
+  <div class="niveis" id="pares-niveis" aria-label="Número-alvo"></div>
+  <div class="jogo-board">
+    <div class="pares-alvo"><span>a soma<br>precisa dar</span><b id="pares-alvo">3</b></div>
+    <div class="barra"><div id="pares-barra"></div></div>
+    <div class="pares-area">
+      <div class="pares-col" id="pares-esq" aria-label="Primeiro número"></div>
+      <div class="pares-mais" aria-hidden="true">+</div>
+      <div class="pares-col" id="pares-dir" aria-label="Segundo número"></div>
+    </div>
+    <p class="achados-titulo" id="pares-titulo"></p>
+    <div class="achados" id="pares-lista"></div>
+  </div>
+</section>
+<!-- Jogo: quantas bolinhas? Quadro de 10 (duas fileiras de 5), cada grupo de 5 numa cor -->
+<section id="jogo-bolinhas" class="jogo" hidden>
+  <div id="bol-inicio" class="bol-niveis"></div>
+  <div id="bol-jogo" hidden>
+    <div class="bol-topo"><span id="bol-rodada"></span><span id="bol-pontos"></span></div>
+    <div class="jogo-board bol-quadros" id="bol-quadros" aria-label="Bolinhas"></div>
+    <div class="bol-opcoes" id="bol-opcoes"></div>
+  </div>
+  <div id="bol-fim" class="jogo-board bol-fim" hidden>
+    <p class="bol-fim-nivel" id="bol-fim-nivel"></p>
+    <p class="bol-fim-pontos" id="bol-fim-pontos"></p>
+    <div class="bol-fim-botoes"><button class="soft" id="bol-denovo">Jogar de novo</button><button class="soft" id="bol-trocar">Trocar nível</button></div>
   </div>
 </section>
 <nav id="digits" aria-label="Escolher número"></nav>
@@ -973,10 +1061,13 @@ const inHome = () => document.body.classList.contains("home");
 function showHome(step = "kinds") {
   clearTimers(); resetTrace(); demo = null; status = "idle";
   if (window.speechSynthesis) speechSynthesis.cancel();
+  document.body.classList.remove("em-jogo");
+  for (const id of ["jogo-pares", "jogo-bolinhas"]) $(id).hidden = true;
   document.body.classList.add("home");
   $("home").hidden = false;
   $("home-kinds").hidden = step !== "kinds";
   $("home-modes").hidden = step !== "modes";
+  $("home-games").hidden = $("home-games-title").hidden = step !== "kinds";
   const title = step === "kinds" ? "Traçado" : KIND_NAMES[kind];
   $("title").textContent = title; document.title = step === "kinds" ? "Traçado de Números e Letras" : T.title;
   if (step === "kinds") { $("home-hello").textContent = "Oba! O que vamos traçar hoje?"; return; }
@@ -1001,6 +1092,156 @@ $("go-treino").onclick = () => leaveHome("treino");
 $("go-folha").onclick = () => leaveHome("folha");
 $("home-back").onclick = () => showHome("kinds");
 $("home-btn").onclick = () => { if (pointerId === null) showHome("kinds"); };
+
+// ----- jogos de números -----
+const embaralha = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const lerJSON = (k, padrao) => { try { return JSON.parse(localStorage.getItem(k) || "null") ?? padrao; } catch { return padrao; } };
+const gravarJSON = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+function abrirJogo(id, titulo) {
+  clearTimers(); resetTrace();
+  document.body.classList.remove("home"); $("home").hidden = true;
+  document.body.classList.add("em-jogo");
+  for (const j of ["jogo-pares", "jogo-bolinhas"]) $(j).hidden = j !== id;
+  $("title").textContent = titulo; document.title = titulo;
+}
+
+// Encontre os pares: números de 0 a 19 dos dois lados; achar todos os pares que somam o alvo (3 a 19).
+// O par vale nos dois sentidos (2 + 9 é o mesmo par que 9 + 2).
+const PARES_MIN = 3, PARES_MAX = 19, PARES_ATE = 19, PARES_KEY = "jogo-pares-feitos";
+let paresAlvo = PARES_MIN, paresAchados = [], paresSel = { esq: null, dir: null };
+let paresFeitos = new Set(lerJSON(PARES_KEY, []));
+const paresDoAlvo = t => { const p = []; for (let a = 0; a <= Math.floor(t / 2); a++) if (t - a <= PARES_ATE) p.push([a, t - a]); return p; };
+function paresNiveis() {
+  const box = $("pares-niveis"); box.innerHTML = "";
+  for (let t = PARES_MIN; t <= PARES_MAX; t++) {
+    const b = document.createElement("button");
+    b.textContent = t; b.setAttribute("aria-current", String(t === paresAlvo)); b.classList.toggle("feito", paresFeitos.has(t));
+    b.setAttribute("aria-label", "Soma " + t + (paresFeitos.has(t) ? ", completa" : ""));
+    b.onclick = () => paresComecar(t);
+    box.appendChild(b);
+  }
+  box.querySelector('[aria-current="true"]')?.scrollIntoView({ inline: "center", block: "nearest" });
+}
+function paresComecar(t) {
+  paresAlvo = t; paresAchados = []; paresSel = { esq: null, dir: null };
+  $("pares-alvo").textContent = t; $("pares-lista").innerHTML = "";
+  for (const lado of ["esq", "dir"]) {
+    const col = $("pares-" + lado); col.innerHTML = "";
+    embaralha([...Array(PARES_ATE + 1).keys()]).forEach(n => {
+      const b = document.createElement("button");
+      b.textContent = n; b.onclick = () => paresToque(lado, n, b);
+      col.appendChild(b);
+    });
+  }
+  paresNiveis(); paresProgresso();
+  setMsg(`Toque um número de cada lado: a soma precisa dar ${t}`);
+}
+function paresProgresso() {
+  const total = paresDoAlvo(paresAlvo).length;
+  $("pares-barra").style.width = Math.round(paresAchados.length / total * 100) + "%";
+  $("pares-titulo").textContent = `Pares encontrados: ${paresAchados.length} de ${total}`;
+}
+function paresToque(lado, n, b) {
+  const atual = paresSel[lado];
+  if (atual) atual.b.classList.remove("sel");
+  if (atual && atual.b === b) { paresSel[lado] = null; return; } // tocar de novo desmarca
+  paresSel[lado] = { n, b }; b.classList.add("sel");
+  const { esq, dir } = paresSel;
+  if (!esq || !dir) return;
+  paresSel = { esq: null, dir: null };
+  const soma = esq.n + dir.n, a = Math.min(esq.n, dir.n), c = Math.max(esq.n, dir.n);
+  const repetido = paresAchados.some(p => p[0] === a && p[1] === c);
+  if (soma === paresAlvo && !repetido) {
+    for (const x of [esq, dir]) { x.b.classList.remove("sel"); x.b.classList.add("usado"); }
+    paresAchados.push([a, c]);
+    const chip = document.createElement("span"); chip.textContent = `${a} + ${c}`; $("pares-lista").appendChild(chip);
+    const alvo = $("pares-alvo"); alvo.classList.remove("pulsa"); void alvo.offsetWidth; alvo.classList.add("pulsa");
+    paresProgresso();
+    if (paresAchados.length === paresDoAlvo(paresAlvo).length) {
+      paresFeitos.add(paresAlvo); gravarJSON(PARES_KEY, [...paresFeitos]); paresNiveis();
+      setMsg(`Parabéns! Você achou todos os pares que somam ${paresAlvo}! ★`, "ok"); beep("fim");
+      if (paresAlvo < PARES_MAX) timer = setTimeout(() => paresComecar(paresAlvo + 1), 2600);
+    } else { setMsg(`Isso! ${esq.n} + ${dir.n} = ${paresAlvo} ★`, "ok"); beep("ok"); }
+    return;
+  }
+  setMsg(repetido ? "Esse par já foi encontrado ✨" : `${esq.n} + ${dir.n} = ${soma}. Tente de novo!`, "err"); beep("erro");
+  for (const x of [esq, dir]) { x.b.classList.remove("sel"); x.b.classList.add("treme"); }
+  setTimeout(() => { for (const x of [esq, dir]) x.b.classList.remove("treme"); }, 400);
+}
+$("go-pares").onclick = () => { abrirJogo("jogo-pares", "Encontre os pares"); paresComecar(paresAlvo); };
+
+// Conta as bolinhas: quadros de 10 (duas fileiras de 5), cada grupo de 5 numa cor e os lugares vazios
+// marcados — a criança vê "5 e mais 2" e quanto falta para o 10. Escolhe entre 4 números.
+const BOL_NIVEIS = { 10: { nome: "Nível 1 (até 10)", max: 10, rodadas: 8, perto: 3 }, 20: { nome: "Nível 2 (até 20)", max: 20, rodadas: 10, perto: 4 } };
+const BOL_KEY = "jogo-bolinhas-melhor";
+let bolMelhor = lerJSON(BOL_KEY, {}), bol = null;
+function bolTela(qual) { for (const t of ["inicio", "jogo", "fim"]) $("bol-" + t).hidden = t !== qual; }
+function bolInicio() {
+  const box = $("bol-inicio"); box.innerHTML = "";
+  Object.entries(BOL_NIVEIS).forEach(([k, n], i) => {
+    const b = document.createElement("button"); b.className = "card " + (i ? "c2" : "c7");
+    b.innerHTML = `<span class="glyph dots-glyph" aria-hidden="true">${i ? "●●●●●<br>●●●●●<br>●●●" : "●●●●●<br>●●"}</span><span class="name"></span><span class="sub"></span>`;
+    b.querySelector(".name").textContent = n.nome;
+    b.querySelector(".sub").textContent = bolMelhor[k] ? `Melhor: ${bolMelhor[k]} de ${n.rodadas}` : "Ainda sem pontos";
+    b.onclick = () => bolComecar(Number(k));
+    box.appendChild(b);
+  });
+  bolTela("inicio"); setMsg("Escolha um nível");
+}
+function bolComecar(k) { bol = { k, rodada: 1, pontos: 0, ultimo: null }; bolTela("jogo"); bolRodada(); }
+function bolRodada() {
+  const n = BOL_NIVEIS[bol.k];
+  let q; do { q = 1 + Math.floor(Math.random() * n.max); } while (q === bol.ultimo);
+  bol.ultimo = q; bol.certo = q; bol.primeira = true;
+  const ops = new Set([q]);
+  for (let guarda = 0; ops.size < 4 && guarda < 60; guarda++) {
+    const c = q + (Math.random() < 0.5 ? -1 : 1) * (1 + Math.floor(Math.random() * n.perto));
+    if (c >= 1 && c <= n.max) ops.add(c);
+  }
+  // quadros: um por dezena; as 5 primeiras de cada quadro numa cor, as 5 seguintes em outra
+  const box = $("bol-quadros"); box.innerHTML = ""; box.className = "jogo-board bol-quadros";
+  // tamanho da bolinha: cabe na largura da tela (5 por fileira; até 20 são dois quadros lado a lado no tablet,
+  // e no celular um embaixo do outro, com bolinhas maiores)
+  box.style.setProperty("--bol", bol.k === 10 ? "clamp(30px, 9vw, 70px)" : PHONE.matches ? "clamp(26px, 8vw, 40px)" : "clamp(22px, 4.4vw, 50px)");
+  for (let d = 0; d < n.max / 10; d++) {
+    const qd = document.createElement("div"); qd.className = "quadro10";
+    for (let i = 0; i < 10; i++) { const b = document.createElement("i"); if (d * 10 + i < q) b.className = "cheia" + (i >= 5 ? " b" : ""); qd.appendChild(b); }
+    box.appendChild(qd);
+  }
+  const opBox = $("bol-opcoes"); opBox.innerHTML = "";
+  embaralha([...ops].sort((a, b) => a - b)).forEach(v => {
+    const b = document.createElement("button"); b.textContent = v; b.onclick = () => bolResposta(v, b); opBox.appendChild(b);
+  });
+  $("bol-rodada").textContent = `Rodada ${bol.rodada} de ${n.rodadas}`;
+  $("bol-pontos").textContent = `Pontos: ${bol.pontos}`;
+  setMsg("Quantas bolinhas?");
+}
+function bolResposta(v, b) {
+  const n = BOL_NIVEIS[bol.k], box = $("bol-quadros");
+  if (b.disabled) return;
+  if (v !== bol.certo) {
+    bol.primeira = false; b.classList.add("errado"); box.classList.add("errado");
+    setMsg("Tente de novo!", "err"); beep("erro");
+    setTimeout(() => { b.classList.remove("errado"); box.classList.remove("errado"); }, 500);
+    return;
+  }
+  document.querySelectorAll("#bol-opcoes button").forEach(x => x.disabled = true);
+  b.classList.add("certo"); box.classList.add("certo");
+  if (bol.primeira) bol.pontos++;
+  $("bol-pontos").textContent = `Pontos: ${bol.pontos}`;
+  setMsg(`Isso mesmo! ${v} ★`, "ok"); beep("ok");
+  if (sound) setTimeout(() => speak(String(v)), 250);
+  timer = setTimeout(() => {
+    if (bol.rodada >= n.rodadas) {
+      bolMelhor[bol.k] = Math.max(bolMelhor[bol.k] || 0, bol.pontos); gravarJSON(BOL_KEY, bolMelhor);
+      $("bol-fim-nivel").textContent = n.nome; $("bol-fim-pontos").textContent = `${bol.pontos} de ${n.rodadas}`;
+      bolTela("fim"); setMsg(bol.pontos === n.rodadas ? "Parabéns! Acertou todas de primeira! ★" : "Muito bem! Quer jogar de novo?", "ok"); beep("fim");
+    } else { bol.rodada++; bolRodada(); }
+  }, 1100);
+}
+$("bol-denovo").onclick = () => bolComecar(bol.k);
+$("bol-trocar").onclick = bolInicio;
+$("go-bolinhas").onclick = () => { abrirJogo("jogo-bolinhas", "Conta as bolinhas"); bolInicio(); };
 
 // ----- caneta -----
 // no livre a criança não vê a bolinha: um pouco mais de folga para encostar perto do começo
@@ -1217,7 +1458,10 @@ $("novo").onclick = () => {
   }
   clearTimeout(novoTimer); b.classList.remove("warn"); b.textContent = "Novo aluno";
   stars = {}; sheets = {}; save();
-  if (inHome()) { b.textContent = "Zerado ✓"; novoTimer = setTimeout(() => { b.textContent = "Novo aluno"; }, 1500); return; }
+  paresFeitos = new Set(); bolMelhor = {}; gravarJSON(PARES_KEY, []); gravarJSON(BOL_KEY, {}); // jogos também recomeçam
+  if (!$("jogo-pares").hidden) paresNiveis();
+  if (!$("bol-inicio").hidden) bolInicio();
+  if (inHome() || document.body.classList.contains("em-jogo")) { b.textContent = "Zerado ✓"; novoTimer = setTimeout(() => { b.textContent = "Novo aluno"; }, 1500); return; }
   mode = "treino"; setMode("treino"); goTo(0);
 };
 
