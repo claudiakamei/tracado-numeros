@@ -1,6 +1,6 @@
 // Guarda o aplicativo no tablet para funcionar sem internet.
 // Ao publicar uma mudança, aumente a VERSAO para os tablets baixarem a versão nova.
-const VERSAO = "tracado-v23";
+const VERSAO = "tracado-v24";
 // nomes em inglês gravados (a voz do celular nem sempre tem inglês): também ficam guardados para usar sem internet
 const NOMES_EN = [..."abcdefghijklmnopqrstuvwxyz", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"].map((k) => `audio/en/${k}.wav`);
 const ARQUIVOS = [
@@ -13,6 +13,8 @@ const ARQUIVOS = [
   "icons/apple-touch-icon.png",
   "icons/kamei-flow-logo.png",
   ...NOMES_EN,
+  // sons das letras (fonemas); as figuras do jogo ficam guardadas na primeira vez que aparecem
+  ..."pbtdcgfvszxjmnlr".split("").map((l) => `audio/fonemas/${l}.wav`),
 ];
 
 self.addEventListener("install", (e) => {

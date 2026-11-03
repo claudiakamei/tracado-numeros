@@ -12,6 +12,10 @@ Endereço: https://tracado.kameiflow.com
 
 Letras: o desenho cinza é a fonte Comic Neue (versão livre no estilo Comic Sans, Google Fonts). Os caminhos de cada letra (`LETTER_PATHS` em `index.html`) seguem o meio do traço da fonte, na ordem escolar da letra bastão; o i e o j têm o pingo como último traço (basta encostar). Nas letras a, b, d, g, h, m, n, p, q, r e u o aluno pode fazer tudo sem tirar a caneta, voltando pela linha até a bolinha do próximo traço (`CONTINUOUS`); nas maiúsculas, em B, D, M, N, P e R (`CONTINUOUS_CAPS`). Depois de chegar na estrelinha, rabiscar sem tirar a caneta não conta como erro.
 
+Jogos: Encontre os pares (somas de 3 a 19, prepara a subtração), Conta as bolinhas (fileiras de 5, como a folha Leitura de Bolinhas) e Sons das letras (consciência fonológica: ouvir o fonema, traçar a letra e achar as figuras que começam com o mesmo som, nos pares P/B, T/D, C/G, F/V, S/Z, X/J, M/N e L/R). Os sons dos fonemas (`audio/fonemas`) e os nomes em inglês (`audio/en`) foram gerados com as vozes do Windows (Maria e Zira).
+
+Figuras do jogo Sons das letras (`icons/fono`): [Twemoji](https://github.com/jdecked/twemoji), © Twitter/X e colaboradores, licença [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
 Arquivos:
 - `index.html`: o aplicativo inteiro (desenhos, conferência do sentido e da ordem, tela).
 - `sw.js`: guarda o aplicativo no tablet para funcionar sem internet. Ao publicar uma mudança, aumente `VERSAO`.

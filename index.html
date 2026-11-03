@@ -147,8 +147,30 @@
   body.em-jogo header { order: 0; } body.em-jogo #msg { order: 1; } body.em-jogo .jogo { order: 2; } body.em-jogo .credit { order: 3; }
   #bol-jogo { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; margin: auto 0; }
   .home-sub { position: relative; z-index: 1; margin: 4px 0 -6px; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.1rem, 2.6vw, 1.5rem); color: var(--muted); }
-  #home-games { width: min(100%, 640px); }
-  .c6 { background: #d9822b; } .c7 { background: #2f8f9d; }
+  #home-games { width: min(100%, 900px); }
+  @media (min-width: 640px) { #home-games { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .c6 { background: #d9822b; } .c7 { background: #2f8f9d; } .c8 { background: #6a8f1f; }
+  /* sons das letras */
+  body.missao nav, body.missao #prev, body.missao #next, body.missao .tabs { display: none !important; }
+  .niveis button.par-sons { font-family: "Comic Neue", "Comic Sans MS", cursive; font-weight: 700; letter-spacing: 0.1em; white-space: nowrap; padding: 4px 12px; }
+  .fono-destaque { display: flex; flex-direction: column; align-items: center; gap: 14px; margin: auto 0; max-width: 520px; }
+  .fono-fig-grande { display: flex; flex-direction: column; align-items: center; gap: 6px; background: none; border: 3px solid #ef6239; border-radius: 24px; padding: 14px 28px; }
+  .fono-fig-grande img { width: clamp(120px, 30vw, 200px); height: auto; aspect-ratio: 1; }
+  .fono-fig-grande span { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.4rem, 4vw, 2rem); }
+  .fono-acoes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .fono-acoes button { font-size: 1.15rem; padding: 10px 18px; }
+  .fono-escrever { font-weight: 800; border: 0; background: var(--accent); color: var(--accent-ink); }
+  .fono-topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; font-weight: 800; color: var(--muted); }
+  .fono-grade { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  .fono-grade button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; border: 2px solid var(--line); background: var(--bg); border-radius: 18px; }
+  /* como na folha de pintar: a figura fica cinza até a criança acertar; aí ganha cor */
+  .fono-grade img { width: clamp(52px, 13vw, 96px); height: auto; aspect-ratio: 1; filter: grayscale(1) opacity(0.55); transition: filter 0.3s; }
+  .fono-grade span { font-weight: 800; font-size: clamp(0.85rem, 2.2vw, 1.05rem); }
+  .fono-grade button.pintada { border-color: var(--ok); background: var(--ok-soft); }
+  .fono-grade button.pintada img { filter: none; }
+  .fono-grade button.treme { animation: treme 0.35s; border-color: var(--err); background: var(--err-soft); }
+  .fono-credito { margin: 0; font-size: 0.7rem; color: var(--muted); }
+  @media (max-width: 640px), (max-height: 520px) { .fono-grade { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; } }
   .card .glyph.dots-glyph { font-size: clamp(1rem, 2.6vw, 1.5rem); line-height: 1.1; letter-spacing: 0.08em; padding: 0.35em 0.5em; }
   .jogo { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 4px 0; }
   .jogo-board { width: min(100%, 720px); background: var(--sheet); border: 2px solid var(--line); border-radius: 24px; padding: 16px; }
@@ -281,11 +303,29 @@
     <button class="card c2" id="go-folha"><span class="glyph folha" id="folha-glyph">1 2 3</span><span class="name" id="folha-name">Folha 1 ao 10</span><span class="sub">todos na mesma folha</span></button>
     <button class="soft back" id="home-back">← Voltar</button>
   </div>
-  <p class="home-sub" id="home-games-title">Jogos de números</p>
+  <p class="home-sub" id="home-games-title">Jogos</p>
   <div class="home-grid" id="home-games">
     <button class="card c6" id="go-pares"><span class="glyph">3+8</span><span class="name">Encontre os pares</span><span class="sub">somas para a subtração</span></button>
     <button class="card c7" id="go-bolinhas"><span class="glyph dots-glyph" aria-hidden="true">●●●●●<br>●●</span><span class="name">Conta as bolinhas</span><span class="sub">quantidade e o 5</span></button>
+    <button class="card c8" id="go-fono"><span class="glyph letra">f v</span><span class="name">Sons das letras</span><span class="sub">consciência fonológica</span></button>
   </div>
+</section>
+<!-- Jogo: consciência fonológica — ouvir o som da letra (fonema), traçar a letra e achar as figuras
+     que começam com o mesmo som, entre as do outro som do par (P/B, T/D, C/G, F/V, S/Z, X/J, M/N, L/R) -->
+<section id="jogo-fono" class="jogo" hidden>
+  <div class="niveis" id="fono-pares" aria-label="Par de sons"></div>
+  <div class="jogo-board fono-destaque" id="fono-destaque">
+    <button class="fono-fig-grande" id="fono-fig" aria-label="Ouvir de novo"><img id="fono-img" alt=""><span id="fono-palavra"></span></button>
+    <div class="fono-acoes">
+      <button class="soft" id="fono-ouvir">🔊 Ouvir o som</button>
+      <button class="fono-escrever" id="fono-escrever">✏️ Escrever a letra</button>
+    </div>
+  </div>
+  <div class="jogo-board" id="fono-figuras" hidden>
+    <div class="fono-topo"><button class="soft" id="fono-ouvir2">🔊 <span id="fono-som2"></span></button><span id="fono-conta"></span></div>
+    <div class="fono-grade" id="fono-grade"></div>
+  </div>
+  <p class="fono-credito">Figuras: Twemoji (CC BY 4.0)</p>
 </section>
 <!-- Jogo: encontre os pares que somam o número-alvo (prepara a subtração: 11 − 2 = 9 porque 2 + 9 = 11) -->
 <section id="jogo-pares" class="jogo" hidden>
@@ -1062,7 +1102,8 @@ function showHome(step = "kinds") {
   clearTimers(); resetTrace(); demo = null; status = "idle";
   if (window.speechSynthesis) speechSynthesis.cancel();
   document.body.classList.remove("em-jogo");
-  for (const id of ["jogo-pares", "jogo-bolinhas"]) $(id).hidden = true;
+  for (const id of ["jogo-pares", "jogo-bolinhas", "jogo-fono"]) $(id).hidden = true;
+  document.body.classList.remove("missao"); fonoMissao = false; try { fonoAudio && fonoAudio.pause(); } catch {}
   document.body.classList.add("home");
   $("home").hidden = false;
   $("home-kinds").hidden = step !== "kinds";
@@ -1101,7 +1142,7 @@ function abrirJogo(id, titulo) {
   clearTimers(); resetTrace();
   document.body.classList.remove("home"); $("home").hidden = true;
   document.body.classList.add("em-jogo");
-  for (const j of ["jogo-pares", "jogo-bolinhas"]) $(j).hidden = j !== id;
+  for (const j of ["jogo-pares", "jogo-bolinhas", "jogo-fono"]) $(j).hidden = j !== id;
   $("title").textContent = titulo; document.title = titulo;
 }
 
@@ -1240,6 +1281,134 @@ $("bol-denovo").onclick = () => bolComecar(bol.k);
 $("bol-trocar").onclick = bolInicio;
 $("go-bolinhas").onclick = () => { abrirJogo("jogo-bolinhas", "Conta as bolinhas"); bolInicio(); };
 
+// Sons das letras (consciência fonológica): pares de sons parecidos, como nas folhas da unidade.
+// Para cada letra do par: ouve o fonema (audio/fonemas, voz Maria do Windows) e a palavra em destaque,
+// traça a letra (o próprio treino do app) e toca nas figuras que começam com aquele som — misturadas com
+// as do outro som do par. A primeira palavra de cada letra é a do destaque. Figuras: Twemoji (icons/fono).
+const FONO_PARES = [["p", "b"], ["t", "d"], ["c", "g"], ["f", "v"], ["s", "z"], ["x", "j"], ["m", "n"], ["l", "r"]];
+const FONO_PALAVRAS = {
+  p: [["pato", "1f986"], ["peixe", "1f41f"], ["pipoca", "1f37f"], ["pera", "1f350"], ["porco", "1f437"], ["pinguim", "1f427"], ["pizza", "1f355"], ["palhaço", "1f921"], ["pão", "1f35e"]],
+  b: [["baleia", "1f433"], ["banana", "1f34c"], ["bola", "26bd"], ["bolo", "1f382"], ["borboleta", "1f98b"], ["boné", "1f9e2"], ["bebê", "1f476"], ["bicicleta", "1f6b2"], ["balão", "1f388"], ["bota", "1f462"]],
+  t: [["tomate", "1f345"], ["tigre", "1f42f"], ["tartaruga", "1f422"], ["telefone", "260e"], ["trem", "1f682"], ["tênis", "1f45f"], ["tesoura", "2702"], ["tubarão", "1f988"], ["troféu", "1f3c6"]],
+  d: [["dado", "1f3b2"], ["dente", "1f9b7"], ["dinossauro", "1f995"], ["dragão", "1f409"], ["diamante", "1f48e"], ["dois", "32-20e3"]],
+  c: [["casa", "1f3e0"], ["cachorro", "1f436"], ["carro", "1f697"], ["cavalo", "1f434"], ["coelho", "1f430"], ["coração", "2764"], ["cobra", "1f40d"], ["coroa", "1f451"], ["caracol", "1f40c"], ["camelo", "1f42b"], ["cama", "1f6cf"]],
+  g: [["gato", "1f431"], ["galo", "1f413"], ["gorila", "1f98d"], ["golfinho", "1f42c"], ["galinha", "1f414"], ["gota", "1f4a7"], ["garfo", "1f374"]],
+  f: [["formiga", "1f41c"], ["faca", "1f52a"], ["foca", "1f9ad"], ["fada", "1f9da"], ["flor", "1f338"], ["fogo", "1f525"], ["foguete", "1f680"], ["folha", "1f343"], ["fantasma", "1f47b"]],
+  v: [["vaca", "1f42e"], ["vela", "1f56f"], ["violino", "1f3bb"], ["vestido", "1f457"], ["vulcão", "1f30b"], ["vassoura", "1f9f9"]],
+  s: [["sapo", "1f438"], ["sol", "2600"], ["sorvete", "1f366"], ["sino", "1f514"], ["sapato", "1f45e"], ["sofá", "1f6cb"], ["sanduíche", "1f96a"], ["sereia", "1f9dc"], ["sacola", "1f6cd"]],
+  z: [["zebra", "1f993"], ["zero", "30-20e3"], ["zumbi", "1f9df"], ["zangado", "1f620"]],
+  x: [["xícara", "2615"], ["xadrez", "265f"], ["xampu", "1f9f4"], ["xerife", "1f920"]],
+  j: [["janela", "1fa9f"], ["jacaré", "1f40a"], ["joaninha", "1f41e"], ["jipe", "1f699"], ["jaqueta", "1f9e5"], ["jornal", "1f4f0"], ["joia", "1f48d"]],
+  m: [["maçã", "1f34e"], ["macaco", "1f435"], ["moto", "1f6f5"], ["melancia", "1f349"], ["martelo", "1f528"], ["mão", "270b"], ["mel", "1f36f"], ["morango", "1f353"], ["milho", "1f33d"]],
+  n: [["navio", "1f6a2"], ["nuvem", "2601"], ["nariz", "1f443"], ["ninho", "1faba"], ["novelo", "1f9f6"], ["nota", "1f3b5"], ["nove", "39-20e3"]],
+  l: [["lata", "1f96b"], ["leão", "1f981"], ["lua", "1f319"], ["livro", "1f4d6"], ["lâmpada", "1f4a1"], ["luva", "1f9e4"], ["limão", "1f34b"], ["lápis", "270f"], ["laranja", "1f34a"]],
+  r: [["relógio", "23f0"], ["rato", "1f42d"], ["rádio", "1f4fb"], ["rinoceronte", "1f98f"], ["rosa", "1f339"], ["robô", "1f916"], ["rei", "1f934"], ["raposa", "1f98a"]],
+};
+const FONO_KEY = "jogo-fono-feitos", FONO_FIGURAS = 8;
+let fonoFeitos = new Set(lerJSON(FONO_KEY, [])), fonoPar = 0, fonoLado = 0, fonoMissao = false, fonoAlvos = 0, fonoAchados = 0;
+const fonoIcone = cp => `icons/fono/${cp}.svg`;
+const fonoLetra = () => FONO_PARES[fonoPar][fonoLado];
+let fonoAudio = null;
+function fonoSom(l, depois) {
+  try { window.speechSynthesis && speechSynthesis.cancel(); if (fonoAudio) fonoAudio.pause(); } catch {}
+  if (!sound) return;
+  fonoAudio = new Audio(`audio/fonemas/${l}.wav`);
+  if (depois) fonoAudio.onended = depois;
+  fonoAudio.play().catch(() => depois && depois());
+}
+// a palavra sempre na voz portuguesa do aparelho (mesmo com a voz do app em inglês)
+function falaPt(texto) {
+  if (!sound) return;
+  try {
+    const s = window.speechSynthesis; s.cancel();
+    const u = new SpeechSynthesisUtterance(texto); u.lang = "pt-BR"; u.rate = 0.85;
+    const low = v => (v.lang || "").replace("_", "-").toLowerCase();
+    u.voice = s.getVoices().find(v => low(v).startsWith("pt-br")) || s.getVoices().find(v => low(v).startsWith("pt")) || null;
+    s.speak(u);
+  } catch {}
+}
+function fonoParesBotoes() {
+  const box = $("fono-pares"); box.innerHTML = "";
+  FONO_PARES.forEach(([a, b], i) => {
+    const bt = document.createElement("button"); bt.className = "par-sons"; bt.textContent = `${a} ${b}`;
+    bt.setAttribute("aria-current", String(i === fonoPar)); bt.classList.toggle("feito", fonoFeitos.has(i));
+    bt.setAttribute("aria-label", `Sons ${a} e ${b}` + (fonoFeitos.has(i) ? ", completo" : ""));
+    bt.onclick = () => { fonoPar = i; fonoLado = 0; fonoDestaque(); };
+    box.appendChild(bt);
+  });
+  box.querySelector('[aria-current="true"]')?.scrollIntoView({ inline: "center", block: "nearest" });
+}
+// 1º passo: a figura em destaque, o som e a palavra
+function fonoDestaque() {
+  clearTimers();
+  const l = fonoLetra(), [palavra, cp] = FONO_PALAVRAS[l][0];
+  $("fono-img").src = fonoIcone(cp); $("fono-palavra").textContent = palavra;
+  $("fono-destaque").hidden = false; $("fono-figuras").hidden = true;
+  fonoParesBotoes();
+  setMsg(`Ouça: /${l}/ de ${palavra}. Agora escreva a letra!`);
+  fonoSom(l, () => setTimeout(() => falaPt(palavra), 250));
+}
+const fonoOuvirDestaque = () => { const l = fonoLetra(); fonoSom(l, () => setTimeout(() => falaPt(FONO_PALAVRAS[l][0][0]), 250)); };
+$("fono-ouvir").onclick = fonoOuvirDestaque;
+$("fono-fig").onclick = fonoOuvirDestaque;
+// 2º passo: traçar a letra no treino do app; ao terminar, volta para as figuras
+$("fono-escrever").onclick = () => {
+  const l = fonoLetra();
+  fonoMissao = true;
+  document.body.classList.remove("em-jogo"); $("jogo-fono").hidden = true;
+  document.body.classList.add("missao");
+  setKind("letras", "treino");
+  goTo(G.findIndex(d => d.label === l));
+};
+function fonoDepoisDoTraco() {
+  fonoMissao = false; document.body.classList.remove("missao");
+  abrirJogo("jogo-fono", "Sons das letras");
+  fonoFiguras();
+}
+// 3º passo: achar as figuras com o mesmo som (cinzas até acertar, como pintar a folha)
+function fonoFiguras() {
+  const [a, b] = FONO_PARES[fonoPar], l = fonoLetra(), outra = l === a ? b : a;
+  const certas = embaralha(FONO_PALAVRAS[l].slice(1)).slice(0, FONO_FIGURAS / 2);
+  const erradas = embaralha(FONO_PALAVRAS[outra]).slice(0, FONO_FIGURAS - certas.length);
+  fonoAlvos = certas.length; fonoAchados = 0;
+  const grade = $("fono-grade"); grade.innerHTML = "";
+  embaralha([...certas.map(w => [w, true]), ...erradas.map(w => [w, false])]).forEach(([[palavra, cp], certa]) => {
+    const bt = document.createElement("button");
+    bt.innerHTML = `<img alt="" src="${fonoIcone(cp)}"><span></span>`; bt.querySelector("span").textContent = palavra;
+    bt.onclick = () => fonoToque(bt, palavra, certa, certa ? l : outra);
+    grade.appendChild(bt);
+  });
+  $("fono-som2").textContent = `/${l}/`;
+  $("fono-destaque").hidden = true; $("fono-figuras").hidden = false;
+  fonoConta();
+  setMsg(`Toque nas figuras que começam com /${l}/`);
+  fonoSom(l);
+}
+const fonoConta = () => { $("fono-conta").textContent = `${fonoAchados} de ${fonoAlvos}`; };
+$("fono-ouvir2").onclick = () => fonoSom(fonoLetra());
+function fonoToque(bt, palavra, certa, letraDela) {
+  if (bt.classList.contains("pintada")) return falaPt(palavra);
+  falaPt(palavra);
+  if (!certa) {
+    setMsg(`${palavra} começa com /${letraDela}/. Tente outra!`, "err"); beep("erro");
+    bt.classList.add("treme"); setTimeout(() => bt.classList.remove("treme"), 400);
+    return;
+  }
+  bt.classList.add("pintada"); fonoAchados++; fonoConta();
+  if (fonoAchados < fonoAlvos) { setMsg(`Isso! ${palavra} começa com /${fonoLetra()}/ ★`, "ok"); beep("ok"); return; }
+  beep("fim");
+  if (fonoLado === 0) {
+    setMsg(`Muito bem! Achou todas com /${fonoLetra()}/ ★ Agora o outro som`, "ok");
+    timer = setTimeout(() => { fonoLado = 1; fonoDestaque(); }, 2200);
+    return;
+  }
+  fonoFeitos.add(fonoPar); gravarJSON(FONO_KEY, [...fonoFeitos]); fonoParesBotoes();
+  const [a, b] = FONO_PARES[fonoPar];
+  setMsg(`Parabéns! Você terminou os sons /${a}/ e /${b}/ ★`, "ok");
+  if (fonoPar < FONO_PARES.length - 1) timer = setTimeout(() => { fonoPar++; fonoLado = 0; fonoDestaque(); }, 2600);
+}
+$("go-fono").onclick = () => { abrirJogo("jogo-fono", "Sons das letras"); fonoDestaque(); };
+
 // ----- caneta -----
 // no livre a criança não vê a bolinha: um pouco mais de folga para encostar perto do começo
 const tol = () => {
@@ -1373,6 +1542,7 @@ function onUp(e) {
   status = "success"; setMsg("Parabéns! Traçado certinho! ★", "ok"); beep("fim");
   stars[sid(d)] = (stars[sid(d)] || 0) + 1; save();
   renderNav(); render(); clearTimers();
+  if (fonoMissao) { timer = setTimeout(fonoDepoisDoTraco, 1500); return; } // veio do jogo Sons das letras
   if (firstTimeAll && allTrained()) {
     // treinou todos: passa para a folha do 1 ao 10
     timer = setTimeout(() => { setMsg(`Você treinou ${T.all}! Agora a folha ★`, "ok"); timer = setTimeout(() => setMode("folha"), 2200); }, 1500);
@@ -1455,7 +1625,7 @@ $("novo").onclick = () => {
   }
   clearTimeout(novoTimer); b.classList.remove("warn"); b.textContent = "Novo aluno";
   stars = {}; sheets = {}; save();
-  paresFeitos = new Set(); bolMelhor = {}; gravarJSON(PARES_KEY, []); gravarJSON(BOL_KEY, {}); // jogos também recomeçam
+  paresFeitos = new Set(); bolMelhor = {}; fonoFeitos = new Set(); gravarJSON(PARES_KEY, []); gravarJSON(BOL_KEY, {}); gravarJSON(FONO_KEY, []); // jogos também recomeçam
   if (!$("jogo-pares").hidden) paresNiveis();
   if (!$("bol-inicio").hidden) bolInicio();
   if (inHome() || document.body.classList.contains("em-jogo")) { b.textContent = "Zerado ✓"; novoTimer = setTimeout(() => { b.textContent = "Novo aluno"; }, 1500); return; }
