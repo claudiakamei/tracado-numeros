@@ -1,6 +1,6 @@
 // Guarda o aplicativo no tablet para funcionar sem internet.
 // Ao publicar uma mudança, aumente a VERSAO para os tablets baixarem a versão nova.
-const VERSAO = "tracado-v20";
+const VERSAO = "tracado-v21";
 // nomes em inglês gravados (a voz do celular nem sempre tem inglês): também ficam guardados para usar sem internet
 const NOMES_EN = [..."abcdefghijklmnopqrstuvwxyz", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"].map((k) => `audio/en/${k}.wav`);
 const ARQUIVOS = [

@@ -144,7 +144,7 @@
   #home { flex: 1; min-height: 0; overflow: auto; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(14px, 3vh, 30px); padding: 10px 0; }
   .home-hello { position: relative; z-index: 1; margin: 0; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.5rem, 4vw, 2.6rem); line-height: 1.15; }
   .home-grid { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(12px, 2.4vw, 26px); width: min(100%, 1000px); padding: 10px 6px; }
-  @media (min-width: 900px) { #home-kinds { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (min-width: 900px) { #home-kinds { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
   #home-modes { width: min(100%, 720px); }
   .card {
     position: relative; border: 0; border-radius: 28px; padding: clamp(16px, 3vw, 30px) 12px; color: #fff;
@@ -153,12 +153,12 @@
   }
   .card:hover:not(:disabled) { transform: translateY(-4px) rotate(-1.5deg); }
   .card:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2); }
-  .c1 { background: #ef6239; } .c2 { background: #1f86cc; } .c3 { background: #16996a; } .c4 { background: #8a57cf; }
+  .c1 { background: #ef6239; } .c2 { background: #1f86cc; } .c3 { background: #16996a; } .c4 { background: #8a57cf; } .c5 { background: #c43f78; }
   .card .glyph {
     font-weight: 800; font-size: clamp(2.6rem, 7vw, 4.6rem); line-height: 1.05; padding: 0.12em 0.4em; border-radius: 22px;
     background: rgba(255, 255, 255, 0.22); animation: pula 2.4s ease-in-out infinite; white-space: nowrap;
   }
-  .c2 .glyph { animation-delay: 0.3s; } .c3 .glyph { animation-delay: 0.6s; } .c4 .glyph { animation-delay: 0.9s; }
+  .c2 .glyph { animation-delay: 0.3s; } .c3 .glyph { animation-delay: 0.6s; } .c4 .glyph { animation-delay: 0.9s; } .c5 .glyph { animation-delay: 1.2s; }
   .card .glyph.letra { font-family: "Comic Neue", "Comic Sans MS", cursive; font-weight: 700; }
   .card .glyph.cursiva { font-family: "Dancing Script", cursive; font-weight: 700; }
   .card .glyph.folha { font-size: clamp(1.8rem, 4.6vw, 3rem); letter-spacing: 0.08em; }
@@ -219,7 +219,8 @@
     <button class="card c1" data-kind="numeros"><span class="glyph">123</span><span class="name">Números</span></button>
     <button class="card c2" data-kind="letras"><span class="glyph letra">abc</span><span class="name">Letras minúsculas</span></button>
     <button class="card c3" data-kind="maiusculas"><span class="glyph letra">ABC</span><span class="name">Letras maiúsculas</span></button>
-    <button class="card c4" disabled><span class="glyph cursiva">abc</span><span class="name">Letras cursivas</span><span class="soon">Em breve</span></button>
+    <button class="card c4" data-kind="cursiva"><span class="glyph cursiva">abc</span><span class="name">Cursiva minúscula</span></button>
+    <button class="card c5" data-kind="cursivaMai"><span class="glyph cursiva">ABC</span><span class="name">Cursiva maiúscula</span></button>
   </div>
   <div class="home-grid" id="home-modes" hidden>
     <button class="card c1" id="go-treino"><span class="glyph" id="treino-glyph">1</span><span class="name">Treino</span><span class="sub">um a um, com exemplo</span></button>
@@ -379,6 +380,87 @@ const LETTERS = LETTER_PATHS.map(([label, x0, width, strokes]) => ({ label, x0, 
 const CAPS = CAPS_PATHS.map(([label, x0, width, strokes]) => ({ label, x0, width, height: LETTER_FONT.height, font: true, cont: CONTINUOUS_CAPS.has(label), strokes: strokes.map(buildStroke) }));
 const isTap = st => st.len < 4; // pingo do i e do j
 
+// Cursiva (modelo escolar brasileiro do caderno da unidade): pauta de 4 linhas — topo das hastes y=12,
+// meio (altura-x) y=54, linha de base y=96 e fim das pernas y=138. Toda letra começa na bolinha da linha
+// de base com o traço de entrada e termina no traço de saída (o que emenda com a próxima letra);
+// o n tem duas ondinhas e o m três. Onde a caneta volta pelo mesmo caminho (a haste do a, o pé do n),
+// a letra é dividida em traços seguidos (cont): passa de um para o outro sem tirar a caneta.
+// A faixa cinza é o próprio caminho (não há fonte). Ordem do caderno: pelo movimento, não pelo alfabeto.
+const CURSIVE_LINES = { top: 12, mid: 54, base: 96, desc: 138 };
+// c, a, o, d, q, g: a entrada sobe pelo lado esquerdo e passa por cima até a direita (C_ENTRY);
+// dali volta por cima e dá a volta (no c termina embaixo; nas outras fecha a roda em cima, à direita)
+const C_ENTRY = "M6 96 C12 95, 16 90, 17 82 C19 66, 26 54, 38 54 C46 54, 51 57, 54 61";
+const RODA = "M54 61 C51 56, 45 54, 38 55 C28 56, 21 65, 21 77 C21 90, 29 96, 38 96 C48 96, 54 88, 54 76 L54 61";
+const LOOP_UP = "M6 96 C16 88, 34 52, 34 30 C34 14, 18 12, 17 26 C16 44, 18 74, 18 96"; // laço do l, b, h, k
+const CURSIVE_PATHS = [
+  ["c", 68, [C_ENTRY, "M54 61 C51 56, 45 54, 38 55 C28 56, 21 65, 21 77 C21 90, 29 96, 39 96 C47 96, 53 94, 60 91"]],
+  ["a", 72, [C_ENTRY, RODA, "M54 61 L54 88 C54 95, 58 97, 64 93"]],
+  ["o", 74, [C_ENTRY, "M54 61 C51 56, 45 54, 38 55 C28 56, 21 65, 21 77 C21 90, 29 96, 38 96 C48 96, 54 88, 54 74 C54 64, 50 58, 44 60 C40 62, 42 68, 48 67 C54 66, 58 62, 66 60"]],
+  ["d", 72, [C_ENTRY, RODA, "M54 61 L54 12", "M54 12 L54 88 C54 95, 58 97, 64 93"]],
+  ["q", 72, [C_ENTRY, RODA, "M54 61 L54 138", "M54 138 L54 97 C57 95, 61 93, 66 90"]],
+  ["g", 74, [C_ENTRY, RODA, "M54 61 L54 122 C54 138, 44 141, 38 136 C31 130, 36 112, 54 100 C58 97, 63 95, 68 92"]],
+  ["y", 66, ["M6 96 C10 88, 14 70, 16 56", "M16 56 L16 84 C16 96, 26 98, 33 95 C40 91, 44 76, 44 56", "M44 56 L44 124 C44 140, 26 140, 26 128 C26 116, 40 104, 60 92"]],
+  ["t", 46, ["M6 96 C12 84, 18 50, 20 28", "M20 28 L20 88 C20 96, 27 98, 36 92", "M8 52 L34 52"]],
+  ["j", 44, ["M6 96 C12 88, 18 70, 20 56", "M20 56 L20 124 C20 140, 2 140, 2 128 C2 116, 18 104, 36 92", "M20 38 L20 39"]],
+  // v do caderno: uma ondinha (∩) e uma concha (∪), com o lacinho em cima na saída
+  ["v", 72, ["M6 96 C10 76, 14 56, 24 54 C32 53, 34 62, 34 76 C34 90, 38 96, 45 96 C53 96, 57 84, 57 64 C57 56, 52 55, 50 59 C48 64, 55 67, 66 62"]],
+  ["n", 72, ["M6 96 C8 80, 10 64, 14 59 C19 52, 30 54, 30 66 L30 96", "M30 96 L30 66 C32 56, 50 52, 52 66 L52 88 C52 96, 59 98, 68 92"]],
+  ["m", 92, ["M6 96 C8 80, 10 64, 14 59 C19 52, 30 54, 30 66 L30 96", "M30 96 L30 66 C32 56, 48 52, 50 66 L50 96", "M50 96 L50 66 C52 56, 70 52, 72 66 L72 88 C72 96, 79 98, 88 92"]],
+  ["i", 44, ["M6 96 C12 88, 18 70, 20 56", "M20 56 L20 88 C20 96, 27 98, 36 92", "M20 38 L20 39"]],
+  ["u", 66, ["M6 96 C10 88, 14 70, 16 56", "M16 56 L16 84 C16 96, 26 98, 33 95 C40 91, 44 76, 44 56", "M44 56 L44 88 C44 96, 51 98, 60 92"]],
+  ["w", 80, ["M6 96 C10 88, 13 70, 14 56", "M14 56 L14 84 C14 96, 22 98, 28 95 C33 91, 36 76, 36 56", "M36 56 L36 84 C36 96, 44 98, 50 95 C56 91, 60 76, 58 56 C56 66, 62 70, 74 66"]],
+  // p: haste até a linha de baixo, volta, barriga redonda à direita e saída pela linha de base
+  ["p", 66, ["M6 96 C12 88, 16 70, 18 52", "M18 52 L18 138", "M18 138 L18 62 C24 54, 34 52, 42 55 C52 58, 54 74, 50 84 C46 94, 30 96, 20 93", "M20 93 C32 97, 48 96, 62 91"]],
+  ["r", 56, ["M6 96 C10 88, 14 70, 16 58", "M16 58 C22 52, 28 62, 34 56 L34 88 C34 96, 41 98, 50 92"]],
+  ["s", 56, ["M6 96 C12 88, 22 66, 28 54", "M28 54 C36 66, 42 82, 34 93 C29 99, 19 97, 15 91", "M15 91 C24 98, 38 97, 50 90"]],
+  ["l", 46, ["M6 96 C16 88, 34 52, 34 30 C34 14, 18 12, 17 26 C16 46, 16 80, 20 92 C24 98, 32 97, 42 90"]],
+  ["b", 60, [LOOP_UP.replace(" C16 44, 18 74, 18 96", " C16 46, 16 80, 19 90 C22 98, 38 97, 40 80 C42 66, 32 58, 30 65 C28 72, 42 72, 54 66")]],
+  ["h", 62, [LOOP_UP, "M18 96 L18 72 C20 58, 40 54, 42 70 L42 88 C42 96, 49 98, 58 92"]],
+  ["e", 56, ["M6 96 C18 92, 36 80, 37 66 C38 54, 22 52, 19 64 C16 78, 18 96, 32 96 C40 96, 46 92, 52 86"]],
+  ["f", 52, ["M6 96 C16 88, 32 52, 32 30 C32 14, 18 12, 18 26 L18 126 C18 140, 32 140, 32 126 C32 110, 24 100, 18 96 C26 98, 36 96, 46 90"]],
+  ["k", 62, [LOOP_UP, "M18 96 L18 74 C24 56, 46 56, 42 70 C39 78, 28 80, 24 76 C32 80, 40 92, 46 95 C50 97, 54 95, 58 92"]],
+  ["x", 72, ["M6 96 C12 86, 16 66, 22 58 C30 52, 40 58, 38 74 C36 90, 26 98, 16 94", "M58 60 C54 52, 42 54, 40 70 C38 88, 46 96, 52 96 C58 96, 62 92, 68 88"]],
+  ["z", 66, ["M6 96 C10 84, 14 64, 20 58 C26 52, 40 52, 40 62 C40 72, 32 86, 28 94 C40 94, 46 106, 44 120 C42 134, 30 140, 24 132 C18 124, 30 106, 42 98 C48 94, 56 92, 62 90"]],
+];
+// Maiúsculas cursivas (mesmo caderno): da linha de cima (y=12) à linha de base; começam na bolinha no alto
+// (o S começa na linha de base). Ordem do caderno, pelo movimento.
+const HASTE = "M8 22 C8 14, 13 10, 18 11 C22 12, 22 18, 22 26 L22 96"; // ganchinho e haste do B, K, P, R, N, M
+const DESCE_SOBE = "M8 24 C8 14, 13 10, 18 11 C22 12, 24 18, 24 28 L24 76 C24 92, 32 96, 40 96 C50 96, 56 86, 56 70"; // U, V, Y
+const TOPO_T = "M8 28 C8 16, 16 12, 24 14 C32 16, 40 18, 54 12";
+const TOPO_I = "M8 40 C10 26, 22 16, 34 12"; // I, J, H
+const CURSIVE_CAPS_PATHS = [
+  ["C", 66, ["M54 22 C48 12, 40 10, 32 12 C16 16, 8 36, 8 56 C8 82, 20 96, 34 96 C46 96, 54 90, 60 82"]],
+  ["A", 72, ["M54 30 C52 18, 44 12, 34 12 C18 12, 8 34, 8 56 C8 82, 20 96, 32 96 C46 96, 54 82, 54 62 L54 30", "M54 30 L54 88 C54 95, 60 97, 68 93"]],
+  ["G", 74, ["M54 22 C48 12, 40 10, 32 12 C16 16, 8 36, 8 56 C8 82, 20 96, 34 96 C44 96, 50 88, 52 76 L52 56", "M52 56 L52 122 C52 138, 42 141, 36 136 C29 130, 34 112, 52 100 C56 97, 61 95, 68 92"]],
+  ["Y", 76, [DESCE_SOBE + " L56 12", "M56 12 L56 122 C56 138, 46 141, 40 136 C33 130, 38 112, 56 100 C60 97, 65 95, 72 92"]],
+  ["V", 72, [DESCE_SOBE + " L56 22 C56 12, 50 10, 48 15 C46 20, 54 22, 68 16"]],
+  ["W", 80, ["M8 24 C8 14, 13 10, 18 11 C22 12, 24 18, 24 28 L24 78 C24 92, 28 96, 33 96 C38 96, 41 90, 42 56", "M42 56 L42 80 C42 92, 46 96, 52 96 C60 96, 64 86, 64 70 L64 22 C64 12, 58 10, 56 15 C54 20, 62 22, 76 16"]],
+  ["B", 66, [HASTE, "M22 96 L22 14 C40 10, 54 18, 52 32 C50 46, 36 52, 26 53", "M26 53 C46 54, 60 62, 58 76 C56 92, 40 98, 26 95"]],
+  ["K", 70, [HASTE, "M22 96 L22 58 C30 50, 44 30, 54 14", "M54 14 C46 30, 34 50, 24 56 C36 60, 44 72, 48 86 C50 94, 56 96, 64 92"]],
+  ["P", 62, [HASTE, "M22 96 L22 14 C40 10, 56 18, 54 34 C52 50, 36 56, 26 54"]],
+  ["T", 62, [TOPO_T, "M54 12 C50 30, 46 60, 46 80 C46 94, 36 98, 26 96 C18 94, 14 88, 16 82"]],
+  ["F", 66, [TOPO_T, "M54 12 C50 30, 46 60, 46 80 C46 94, 36 98, 26 96 C18 94, 14 88, 16 82", "M30 56 L60 56"]],
+  ["R", 70, [HASTE, "M22 96 L22 14 C40 10, 56 18, 54 32 C52 46, 36 52, 26 53", "M26 53 C40 56, 46 70, 48 84 C50 94, 56 96, 64 92"]],
+  ["N", 68, [HASTE, "M22 96 L22 20 C24 12, 46 10, 48 24 L48 88 C48 95, 54 97, 62 93"]],
+  ["M", 80, [HASTE, "M22 96 L22 20 C24 12, 38 10, 40 22 L40 96", "M40 96 L40 22 C42 12, 58 10, 60 24 L60 88 C60 95, 66 97, 74 93"]],
+  ["U", 72, [DESCE_SOBE + " L56 12", "M56 12 L56 88 C56 95, 62 97, 70 93"]],
+  ["O", 66, ["M20 12 C10 18, 7 38, 8 58 C10 84, 22 96, 36 96 C52 96, 60 80, 60 54 C60 28, 50 12, 36 12 C26 12, 22 20, 22 30 C22 40, 28 46, 34 46"]],
+  ["Q", 74, ["M20 12 C10 18, 7 38, 8 58 C10 84, 22 96, 36 96 C52 96, 60 80, 60 54 C60 28, 50 12, 36 12 C30 12, 24 13, 20 16", "M20 16 C14 30, 13 60, 14 82 C18 72, 24 70, 28 76 C32 84, 38 94, 46 94 C54 94, 62 92, 70 88"]],
+  ["I", 50, [TOPO_I, "M34 12 C32 40, 32 70, 30 84 C28 96, 16 98, 12 90 C10 84, 12 80, 16 78"]],
+  ["J", 58, [TOPO_I, "M34 12 C33 40, 33 80, 32 122 C32 138, 22 141, 16 136 C10 130, 14 112, 32 100 C38 96, 44 94, 52 92"]],
+  ["H", 70, [TOPO_I, "M34 12 C32 40, 32 70, 30 84 C28 96, 16 98, 12 90 C10 84, 14 76, 24 68 C36 56, 50 36, 58 22 C62 14, 56 8, 52 14 C48 22, 50 50, 50 70 L50 88 C50 95, 56 97, 64 93"]],
+  ["E", 66, ["M48 18 C44 12, 36 10, 28 12 C18 14, 14 24, 16 34 C18 46, 28 52, 36 52", "M36 52 C22 52, 12 62, 12 74 C12 90, 24 96, 36 96 C48 96, 56 90, 62 82"]],
+  ["S", 64, ["M6 96 C20 70, 34 40, 42 18 C44 10, 36 8, 34 16 C32 26, 52 40, 56 62 C58 82, 46 96, 32 96 C20 96, 16 86, 22 80 C28 74, 36 76, 42 80"]],
+  ["D", 70, ["M16 12 L16 88 C16 96, 8 98, 6 92 C4 86, 12 84, 20 90 C26 95, 34 96, 40 96 C54 96, 62 82, 62 58 C62 30, 50 14, 38 14 C28 14, 26 24, 28 34 C30 42, 36 46, 42 44"]],
+  ["L", 64, ["M50 20 C48 12, 40 10, 34 12 C26 16, 26 28, 26 44 C26 66, 24 84, 18 92 C14 98, 6 96, 8 90 C10 84, 20 86, 28 92 C36 96, 50 96, 60 90"]],
+  ["X", 76, ["M8 30 C10 16, 20 12, 28 14 C38 16, 40 34, 40 54 C40 76, 34 94, 22 96 C14 96, 10 92, 10 86", "M66 22 C60 12, 50 12, 44 18 C40 26, 40 40, 40 54 C40 76, 46 94, 58 96 C66 96, 70 90, 70 84"]],
+  ["Z", 70, ["M8 30 C10 16, 22 10, 34 12 C46 14, 50 28, 46 40 C42 54, 34 64, 30 78 C28 86, 32 90, 38 94 C44 100, 46 110, 44 120 C42 132, 32 140, 26 134 C20 128, 30 106, 44 98 C50 94, 56 92, 64 90"]],
+];
+const CURSIVE_CAPS = CURSIVE_CAPS_PATHS.map(([label, width, strokes]) => ({ label, id: "cursivaM-" + label, x0: -2, width, height: 150,
+  lined: true, band: 11, cont: strokes.length > 1, strokes: strokes.map(buildStroke) }));
+const CURSIVE = CURSIVE_PATHS.map(([label, width, strokes]) => ({ label, id: "cursiva-" + label, x0: -2, width, height: 150,
+  lined: true, band: 11, cont: strokes.length > 1, strokes: strokes.map(buildStroke) }));
+
 // Os dois conjuntos do aplicativo e os textos de cada um
 const SETS = {
   numeros: { G: DIGITS, title: "Traçado de Números 1 ~ 10", folha: "Folha 1 ao 10", one: "número", the: l => `o ${l}`, other: "outro número", here: "neste número",
@@ -387,7 +469,12 @@ const SETS = {
             all: "todas as letras", done: "todas as letras", pick: "uma letra" },
   maiusculas: { G: CAPS, title: "Traçado de Letras Maiúsculas A ~ Z", folha: "Folha A ~ Z", one: "letra", the: l => `a letra ${l}`, other: "outra letra", here: "nesta letra",
                 all: "todas as letras", done: "todas as maiúsculas", pick: "uma letra" },
+  cursiva: { G: CURSIVE, title: "Traçado de Cursivas Minúsculas", folha: "Folha cursiva a ~ z", one: "letra", the: l => `a letra ${l}`, other: "outra letra", here: "nesta letra",
+             all: "todas as cursivas minúsculas", done: "todas as cursivas minúsculas", pick: "uma letra" },
+  cursivaMai: { G: CURSIVE_CAPS, title: "Traçado de Cursivas Maiúsculas", folha: "Folha cursiva A ~ Z", one: "letra", the: l => `a letra ${l}`, other: "outra letra", here: "nesta letra",
+                all: "todas as cursivas maiúsculas", done: "todas as cursivas maiúsculas", pick: "uma letra" },
 };
+const sid = d => d.id || d.label; // chave das estrelinhas (a cursiva não divide com a letra bastão)
 // Nome falado de cada número e letra (voz do próprio tablet, em português). As vogais vão como "ah", "eh"…:
 // algumas vozes de celular leem um "á" sozinho como "a com acento agudo".
 const NAMES = { 1: "um", 2: "dois", 3: "três", 4: "quatro", 5: "cinco", 6: "seis", 7: "sete", 8: "oito", 9: "nove", 10: "dez",
@@ -525,7 +612,7 @@ function speakTts(label) {
 }
 const sayCurrent = () => { if (!speak(G[digitIdx].label)) setMsg("Este aparelho não tem voz para falar o nome."); };
 
-const missing = () => G.filter(d => !stars[d.label]).map(d => d.label);
+const missing = () => G.filter(d => !stars[sid(d)]).map(d => d.label);
 const allTrained = () => missing().length === 0; // treinou todos os números (a folha fica sempre liberada)
 
 let audio = null;
@@ -607,7 +694,7 @@ function renderNav() {
     b.textContent = d.label;
     b.setAttribute("aria-current", k === digitIdx ? "true" : "false");
     b.setAttribute("aria-label", (kind !== "numeros" ? "Letra " : "Número ") + d.label);
-    if (stars[d.label]) { const s = document.createElement("span"); s.className = "badge"; s.textContent = "★" + stars[d.label]; b.appendChild(s); }
+    if (stars[sid(d)]) { const s = document.createElement("span"); s.className = "badge"; s.textContent = "★" + stars[sid(d)]; b.appendChild(s); }
     b.onclick = () => goTo(k);
     nav.appendChild(b);
   });
@@ -624,9 +711,16 @@ function drawGuides(g, d, activeStroke) {
       fill: "var(--band)", stroke: "var(--band)", "stroke-width": 7, "stroke-linejoin": "round" }, g);
     t.textContent = d.label;
   }
+  if (d.lined) {
+    // pauta do caderno de cursiva: base contínua, as outras tracejadas
+    const L = CURSIVE_LINES, x1 = d.x0 - 6, x2 = d.width + 6;
+    for (const y of [L.top, L.mid, L.base, L.desc])
+      el("line", { x1, x2, y1: y, y2: y, stroke: "var(--line)", "stroke-width": y === L.base ? 1.6 : 1, ...(y === L.base ? {} : { "stroke-dasharray": "4 4" }) }, g);
+  }
   d.strokes.forEach(st => {
-    if (isTap(st)) return;
-    if (!d.font) el("path", { d: st.d, ...ROUND, stroke: "var(--band)", "stroke-width": 22 }, g);
+    // pingo do i e do j da cursiva: sem fonte por baixo, a faixa cinza mostra o lugar do pingo
+    if (isTap(st)) { if (!d.font) el("circle", { cx: st.pts[0].x, cy: st.pts[0].y, r: (d.band || 22) / 2 + 1, fill: "var(--band)" }, g); return; }
+    if (!d.font) el("path", { d: st.d, ...ROUND, stroke: "var(--band)", "stroke-width": d.band || 22 }, g);
     el("path", { d: st.d, fill: "none", stroke: "var(--dash)", "stroke-width": 1.3, "stroke-dasharray": "3 3" }, g);
   });
   return () => d.strokes.forEach((st, k) => {
@@ -717,7 +811,7 @@ function computeLayout() {
   // Nunca diminui abaixo de K_MIN (no celular as letras ficariam minúsculas): se não couber, a folha vira páginas.
   // A minúscula só ocupa o meio do quadradinho (em cima e embaixo é lugar das hastes do b e do g):
   // encolhida como a maiúscula, o a, o c e o e ficariam miúdos. Por isso ela não diminui: vira páginas.
-  const K_MIN = kind === "letras" ? 0.75 : 0.55;
+  const K_MIN = kind === "letras" || kind.startsWith("cursiva") ? 0.75 : 0.55;
   let k = 0.75, rows;
   for (;;) {
     rows = balanced(W / k, all);
@@ -874,7 +968,7 @@ function setKind(k, m = mode) {
 
 // ----- tela inicial -----
 // passo 1: números, minúsculas, maiúsculas (cursiva em breve); passo 2: treino ou folha
-const KIND_NAMES = { numeros: "Números", letras: "Letras minúsculas", maiusculas: "Letras maiúsculas" };
+const KIND_NAMES = { numeros: "Números", letras: "Letras minúsculas", maiusculas: "Letras maiúsculas", cursiva: "Cursiva minúscula", cursivaMai: "Cursiva maiúscula" };
 const inHome = () => document.body.classList.contains("home");
 function showHome(step = "kinds") {
   clearTimers(); resetTrace(); demo = null; status = "idle";
@@ -1039,7 +1133,7 @@ function onUp(e) {
   if (mode === "folha") return finishSheetDigit();
   const firstTimeAll = !allTrained();
   status = "success"; setMsg("Parabéns! Traçado certinho! ★", "ok"); beep("fim");
-  stars[d.label] = (stars[d.label] || 0) + 1; save();
+  stars[sid(d)] = (stars[sid(d)] || 0) + 1; save();
   renderNav(); render(); clearTimers();
   if (firstTimeAll && allTrained()) {
     // treinou todos: passa para a folha do 1 ao 10
