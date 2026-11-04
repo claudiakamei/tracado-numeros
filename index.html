@@ -629,14 +629,33 @@ function juntar(anterior, d) {
   }
   return anterior + " " + [...curva, ...P.slice(j + 1)].map(p => `L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
 }
+// Depois de uma letra que termina no alto (o, v, w, b), as redondas (c, a, o, d, q, g) não usam a entrada da
+// letra sozinha (que sobe pelo lado esquerdo): a perninha segue pelo alto direto até a pontinha da letra
+// (x=54, y=61, onde começa a volta) e dali a letra faz a volta normalmente.
+const REDONDAS = "caodqg";
+function ateAPontinha(anterior, ponta) {
+  const Q = parsePath(anterior), fim = Q[Q.length - 1];
+  const c1 = { x: fim.x + (ponta.x - fim.x) * 0.35, y: 53 }, c2 = { x: ponta.x - 8, y: ponta.y - 7 };
+  const curva = [];
+  for (let t = 0.1; t <= 1.0001; t += 0.1) {
+    const u = 1 - t;
+    curva.push({ x: u * u * u * fim.x + 3 * u * u * t * c1.x + 3 * u * t * t * c2.x + t * t * t * ponta.x,
+                 y: u * u * u * fim.y + 3 * u * u * t * c1.y + 3 * u * t * t * c2.y + t * t * t * ponta.y });
+  }
+  return anterior + " " + curva.map(p => `L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+}
 function buildCursiveWord(word) {
   const strokes = [], depois = []; let fim = null, largura = 0;
   for (const l of word) {
     const L = LETRA_CURSIVA[l];
-    const dx = fim ? fim.x - 6 - APERTO : 0; // a entrada de toda letra começa em x=6 na linha de base
+    const pelaPonta = fim && fim.y < 80 && REDONDAS.includes(l);
+    // a entrada de toda letra começa em x=6 na linha de base; pela pontinha, o lado esquerdo da roda (x≈21)
+    // fica logo depois de onde a letra anterior terminou
+    const dx = !fim ? 0 : pelaPonta ? fim.x + 4 - 21 : fim.x - 6 - APERTO;
     L.strokes.forEach((raw, k) => {
       const d = movePath(raw, dx);
       if (buildStroke(d).len < 4 || (l === "t" && k === 2)) { depois.push(d); return; } // pingo e corte do t: no fim
+      if (k === 0 && pelaPonta) { strokes[strokes.length - 1] = ateAPontinha(strokes[strokes.length - 1], { x: dx + 54, y: 61 }); return; }
       if (k === 0 && fim) { strokes[strokes.length - 1] = juntar(strokes[strokes.length - 1], d); return; }
       strokes.push(d);
     });
