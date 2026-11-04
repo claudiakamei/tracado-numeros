@@ -536,8 +536,9 @@ const CURSIVE_PATHS = [
   ["j", 44, ["M6 96 C12 88, 18 70, 20 56", "M20 56 L20 124 C20 140, 2 140, 2 128 C2 116, 18 104, 36 92", "M20 38 L20 39"]],
   // v do caderno: uma ondinha (∩) e uma concha (∪), com o lacinho em cima na saída
   ["v", 72, ["M6 96 C10 76, 14 56, 24 54 C32 53, 34 62, 34 76 C34 90, 38 96, 45 96 C53 96, 57 84, 57 64 C57 56, 52 55, 50 59 C48 64, 55 67, 66 62"]],
-  ["n", 72, ["M6 96 C8 80, 10 64, 14 59 C19 52, 30 54, 30 66 L30 96", "M30 96 L30 66 C32 56, 50 52, 52 66 L52 88 C52 96, 59 98, 68 92"]],
-  ["m", 92, ["M6 96 C8 80, 10 64, 14 59 C19 52, 30 54, 30 66 L30 96", "M30 96 L30 66 C32 56, 48 52, 50 66 L50 96", "M50 96 L50 66 C52 56, 70 52, 72 66 L72 88 C72 96, 79 98, 88 92"]],
+  // n e m: as ondinhas com a mesma largura (22 no n, 20 no m)
+  ["n", 76, ["M6 96 C8 80, 10 62, 16 58 C22 52, 34 54, 34 66 L34 96", "M34 96 L34 66 C36 56, 54 52, 56 66 L56 88 C56 96, 63 98, 72 92"]],
+  ["m", 92, ["M6 96 C8 80, 9 62, 14 58 C19 52, 32 54, 32 66 L32 96", "M32 96 L32 66 C34 56, 50 52, 52 66 L52 96", "M52 96 L52 66 C54 56, 70 52, 72 66 L72 88 C72 96, 79 98, 88 92"]],
   ["i", 44, ["M6 96 C12 88, 18 70, 20 56", "M20 56 L20 88 C20 96, 27 98, 36 92", "M20 38 L20 39"]],
   ["u", 66, ["M6 96 C10 88, 14 70, 16 56", "M16 56 L16 84 C16 96, 26 98, 33 95 C40 91, 44 76, 44 56", "M44 56 L44 88 C44 96, 51 98, 60 92"]],
   ["w", 80, ["M6 96 C10 88, 13 70, 14 56", "M14 56 L14 84 C14 96, 22 98, 28 95 C33 91, 36 76, 36 56", "M36 56 L36 84 C36 96, 44 98, 50 95 C56 91, 60 76, 58 56 C56 66, 62 70, 74 66"]],
@@ -607,15 +608,20 @@ function movePath(d, dx) {
   return d.match(/[MLC]|-?\d+(?:\.\d+)?/g).map(t => /[MLC]/.test(t) ? t : (k++ % 2 === 0 ? +t + dx : +t)).join(" ");
 }
 const fimDe = d => { const p = parsePath(d); return p[p.length - 1]; };
-// A junção é uma curva só: sai da letra anterior na direção em que ela terminou e entra na seguinte na
-// direção da subida dela — sem trecho reto na linha (parecia uma falha entre as letras) e sem quina.
-// Depois do o, v, w e b (que terminam no alto) a curva segue lá em cima e encontra a próxima letra no ponto
-// em que a entrada dela chega a essa altura; nas outras, encontra a entrada já subindo.
-const APERTO = 8; // aproxima as letras na palavra
+// Junções (ajustadas com a usuária):
+// - letra redonda (c, a, o, d, q, g) depois de saída embaixo: curva só, da saída da anterior até a entrada
+//   já subindo, com as letras um pouco mais juntas (APERTO) — sem trecho reto na linha, que parecia falha;
+// - redonda depois de saída no alto (o, v, w, b): pelo alto até a pontinha (ateAPontinha);
+// - letra alta (l, b, h, k, f) depois de saída no alto: a perninha sobe direto para o laço;
+// - outras depois de saída no alto: curva lá em cima até onde a entrada chega a essa altura;
+// - outras depois de saída embaixo: a entrada continua da saída, no espaçamento normal (aproximar deixava
+//   o s, o t, o u e o p espremidos).
+const APERTO = 8;
+const ALTAS = "lbhkf";
 const direcao = (a, b) => { const n = Math.hypot(b.x - a.x, b.y - a.y) || 1; return { x: (b.x - a.x) / n, y: (b.y - a.y) / n }; };
-function juntar(anterior, d) {
+function juntar(anterior, d, alta) {
   const Q = parsePath(anterior), fim = Q[Q.length - 1], P = parsePath(d), alto = fim.y < 80;
-  let j = P.findIndex((p, i) => i > 0 && p.x >= fim.x + 6 && (alto ? p.y <= fim.y + 6 : p.y <= 86));
+  let j = P.findIndex((p, i) => i > 0 && p.x >= fim.x + 6 && (alto ? p.y <= (alta ? 40 : fim.y + 6) : p.y <= 86));
   if (j < 0) j = 1;
   const alvo = P[j], sai = direcao(Q[Math.max(0, Q.length - 4)], fim);
   const entra = direcao(P[Math.max(0, j - 2)], P[Math.min(P.length - 1, j + 2)]);
@@ -648,15 +654,22 @@ function buildCursiveWord(word) {
   const strokes = [], depois = []; let fim = null, largura = 0;
   for (const l of word) {
     const L = LETRA_CURSIVA[l];
-    const pelaPonta = fim && fim.y < 80 && REDONDAS.includes(l);
+    const alto = fim && fim.y < 80, redonda = REDONDAS.includes(l);
+    const pelaPonta = alto && redonda;
     // a entrada de toda letra começa em x=6 na linha de base; pela pontinha, o lado esquerdo da roda (x≈21)
     // fica logo depois de onde a letra anterior terminou
-    const dx = !fim ? 0 : pelaPonta ? fim.x + 4 - 21 : fim.x - 6 - APERTO;
+    const dx = !fim ? 0 : pelaPonta ? fim.x + 4 - 21 : redonda ? fim.x - 6 - APERTO : fim.x - 6;
     L.strokes.forEach((raw, k) => {
       const d = movePath(raw, dx);
       if (buildStroke(d).len < 4 || (l === "t" && k === 2)) { depois.push(d); return; } // pingo e corte do t: no fim
-      if (k === 0 && pelaPonta) { strokes[strokes.length - 1] = ateAPontinha(strokes[strokes.length - 1], { x: dx + 54, y: 61 }); return; }
-      if (k === 0 && fim) { strokes[strokes.length - 1] = juntar(strokes[strokes.length - 1], d); return; }
+      const ultimo = strokes.length - 1;
+      if (k === 0 && pelaPonta) { strokes[ultimo] = ateAPontinha(strokes[ultimo], { x: dx + 54, y: 61 }); return; }
+      if (k === 0 && fim && (redonda || alto)) { strokes[ultimo] = juntar(strokes[ultimo], d, ALTAS.includes(l)); return; }
+      if (k === 0 && fim) {
+        // a entrada continua da saída da letra anterior, no mesmo traço
+        strokes[ultimo] += " " + d.replace(/^M\s*-?[\d.]+\s+-?[\d.]+\s*/, "");
+        return;
+      }
       strokes.push(d);
     });
     fim = fimDe(strokes[strokes.length - 1]);
