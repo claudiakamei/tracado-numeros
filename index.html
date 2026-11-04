@@ -91,6 +91,8 @@
   /* palavras: são muitas e compridas; uma linha só, que rola para o lado, para sobrar a tela para a palavra */
   body.palavras nav { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; padding: 8px 2px 2px; scrollbar-width: thin; }
   body.palavras nav button { flex: none; padding: 0 12px; font-size: clamp(1.1rem, 2.2vw, 1.4rem); }
+  /* as palavras são sempre faladas em português: sem o botão de voz em inglês */
+  body.palavras:not(.home):not(.em-jogo) #voice-lang { display: none; }
   nav .badge {
     position: absolute; top: -9px; right: -9px; background: var(--star); color: #1d2a33; border-radius: 999px;
     font-family: var(--font-body); font-size: 0.72rem; padding: 1px 6px; line-height: 1.4;
@@ -622,6 +624,12 @@ const direcao = (a, b) => { const n = Math.hypot(b.x - a.x, b.y - a.y) || 1; ret
 function juntar(anterior, d, alta) {
   const Q = parsePath(anterior), fim = Q[Q.length - 1], P = parsePath(d), alto = fim.y < 80;
   let j = P.findIndex((p, i) => i > 0 && p.x >= fim.x + 6 && (alto ? p.y <= (alta ? 40 : fim.y + 6) : p.y <= 86));
+  if (alto && !alta) {
+    // depois de saída no alto: direto ao ponto mais alto do começo da letra (o alto da 1ª ondinha do n e
+    // do m, a ponta do i, do u, do s…) — chegar no meio da subida fazia uma ondinha que parecia falha
+    j = -1;
+    P.forEach((p, i) => { if (i > 0 && p.x >= fim.x + 6 && (j < 0 || p.y < P[j].y)) j = i; });
+  }
   if (j < 0) j = 1;
   const alvo = P[j], sai = direcao(Q[Math.max(0, Q.length - 4)], fim);
   const entra = direcao(P[Math.max(0, j - 2)], P[Math.min(P.length - 1, j + 2)]);
