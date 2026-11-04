@@ -1395,11 +1395,13 @@ function fonoSom(l, depois) {
   fonoAudio.play().catch(() => depois && depois());
 }
 // a palavra sempre na voz portuguesa do aparelho (mesmo com a voz do app em inglês)
+// palavras que a voz do aparelho pronuncia errado: escritas como se falam (a tela continua mostrando a certa)
+const PRONUNCIA = { oca: "óca" };
 function falaPt(texto) {
   if (!sound) return;
   try {
     const s = window.speechSynthesis; s.cancel();
-    const u = new SpeechSynthesisUtterance(texto); u.lang = "pt-BR"; u.rate = 0.85;
+    const u = new SpeechSynthesisUtterance(PRONUNCIA[texto] || texto); u.lang = "pt-BR"; u.rate = 0.85;
     const low = v => (v.lang || "").replace("_", "-").toLowerCase();
     u.voice = s.getVoices().find(v => low(v).startsWith("pt-br")) || s.getVoices().find(v => low(v).startsWith("pt")) || null;
     s.speak(u);
