@@ -149,7 +149,7 @@
   .home-sub { position: relative; z-index: 1; margin: 4px 0 -6px; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.1rem, 2.6vw, 1.5rem); color: var(--muted); }
   #home-games { width: min(100%, 900px); }
   @media (min-width: 640px) { #home-games { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-  .c6 { background: #d9822b; } .c7 { background: #2f8f9d; } .c8 { background: #6a8f1f; }
+  .c6 { background: #d9822b; } .c7 { background: #2f8f9d; } .c8 { background: #6a8f1f; } .c9 { background: #b5651d; }
   /* sons das letras */
   body.missao nav, body.missao #prev, body.missao #next, body.missao .tabs { display: none !important; }
   .niveis button.par-sons { font-family: "Comic Neue", "Comic Sans MS", cursive; font-weight: 700; letter-spacing: 0.1em; white-space: nowrap; padding: 4px 12px; }
@@ -220,7 +220,7 @@
   #home { flex: 1; min-height: 0; overflow: auto; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(14px, 3vh, 30px); padding: 10px 0; }
   .home-hello { position: relative; z-index: 1; margin: 0; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.5rem, 4vw, 2.6rem); line-height: 1.15; }
   .home-grid { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(12px, 2.4vw, 26px); width: min(100%, 1000px); padding: 10px 6px; }
-  @media (min-width: 900px) { #home-kinds { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+  @media (min-width: 900px) { #home-kinds { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   #home-modes { width: min(100%, 720px); }
   .card {
     position: relative; border: 0; border-radius: 28px; padding: clamp(16px, 3vw, 30px) 12px; color: #fff;
@@ -297,6 +297,7 @@
     <button class="card c3" data-kind="maiusculas"><span class="glyph letra">ABC</span><span class="name">Letras maiúsculas</span></button>
     <button class="card c4" data-kind="cursiva"><span class="glyph cursiva">abc</span><span class="name">Cursiva minúscula</span></button>
     <button class="card c5" data-kind="cursivaMai"><span class="glyph cursiva">ABC</span><span class="name">Cursiva maiúscula</span></button>
+    <button class="card c9" data-kind="cursivaPal"><span class="glyph cursiva">bola</span><span class="name">Palavras em cursiva</span></button>
   </div>
   <div class="home-grid" id="home-modes" hidden>
     <button class="card c1" id="go-treino"><span class="glyph" id="treino-glyph">1</span><span class="name">Treino</span><span class="sub">um a um, com exemplo</span></button>
@@ -589,6 +590,57 @@ const CURSIVE_CAPS = CURSIVE_CAPS_PATHS.map(([label, width, strokes]) => ({ labe
 const CURSIVE = CURSIVE_PATHS.map(([label, width, strokes]) => ({ label, id: "cursiva-" + label, x0: -2, width, height: 150,
   lined: true, band: 11, cont: strokes.length > 1, strokes: strokes.map(buildStroke) }));
 
+// Palavras em cursiva: montadas com as próprias letras do caderno. Cada letra é deslocada para a entrada
+// começar onde terminou a saída da anterior, e esse trecho vira um traço só (a criança não tira a caneta
+// entre as letras; depois do o, v, w e b a entrada sai do alto, onde a letra terminou). Como no caderno,
+// o pingo do i e do j e o corte do t ficam para o fim, depois da palavra pronta.
+const CURSIVE_WORDS = ["oca", "coco", "dado", "gado", "bola", "boca", "lado", "casa", "gato", "pato", "sapo", "vaca", "uva",
+  "dedo", "fada", "foca", "mala", "mesa", "rato", "suco", "pipa", "tatu", "lua", "bolo", "faca", "fogo", "sino", "pena",
+  "macaco", "banana", "panela", "cavalo", "boneca", "sapato", "menino", "tomate"];
+const LETRA_CURSIVA = Object.fromEntries(CURSIVE_PATHS.map(([l, width, strokes]) => [l, { width, strokes }]));
+function movePath(d, dx) {
+  // desloca na horizontal: os números do caminho vêm sempre em pares x y
+  let k = 0;
+  return d.match(/[MLC]|-?\d+(?:\.\d+)?/g).map(t => /[MLC]/.test(t) ? t : (k++ % 2 === 0 ? +t + dx : +t)).join(" ");
+}
+const fimDe = d => { const p = parsePath(d); return p[p.length - 1]; };
+function buildCursiveWord(word) {
+  const strokes = [], depois = []; let x = 0, fim = null, largura = 0;
+  for (const l of word) {
+    const L = LETRA_CURSIVA[l];
+    const dx = fim ? fim.x - 6 : 0; // a entrada de toda letra começa em x=6 na linha de base
+    L.strokes.forEach((raw, k) => {
+      let d = movePath(raw, dx);
+      if (buildStroke(d).len < 4 || (l === "t" && k === 2)) { depois.push(d); return; } // pingo e corte do t: no fim
+      if (k === 0 && fim && fim.y < 80) {
+        // o, v, w e b terminam no alto: a ligação segue lá em cima (não desce até a linha) e encontra a
+        // letra seguinte no ponto em que a entrada dela chega a essa altura
+        const P = parsePath(d);
+        let j = P.findIndex((p, i) => i > 0 && p.y <= fim.y + 6);
+        if (j < 0) j = 1;
+        const alvo = P[j], meio = { x: (fim.x + alvo.x) / 2, y: Math.min(fim.y, alvo.y) - 2 };
+        const liga = [0.25, 0.5, 0.75, 1].map(t => ({ // curvinha de fim até alvo, passando um pouco acima
+          x: (1 - t) * (1 - t) * fim.x + 2 * (1 - t) * t * meio.x + t * t * alvo.x,
+          y: (1 - t) * (1 - t) * fim.y + 2 * (1 - t) * t * meio.y + t * t * alvo.y }));
+        strokes[strokes.length - 1] += " " + [...liga, ...P.slice(j + 1)].map(p => `L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+        return;
+      }
+      if (k === 0 && fim) {
+        // a entrada sai de onde a letra anterior terminou e continua o mesmo traço
+        const resto = d.replace(/^M\s*-?[\d.]+\s+-?[\d.]+/, "");
+        strokes[strokes.length - 1] += resto.replace(/^\s*/, " ").replace(/^ (C|L)/, " $1");
+        return;
+      }
+      strokes.push(d);
+    });
+    fim = fimDe(strokes[strokes.length - 1]);
+    largura = dx + L.width;
+  }
+  return { label: word, id: "palavra-" + word, word: true, x0: -2, width: largura, height: 150, lined: true, band: 11,
+    cont: true, strokes: [...strokes, ...depois].map(buildStroke) };
+}
+const CURSIVE_WORD_SET = CURSIVE_WORDS.map(buildCursiveWord);
+
 // Os dois conjuntos do aplicativo e os textos de cada um
 const SETS = {
   numeros: { G: DIGITS, title: "Traçado de Números 1 ~ 10", folha: "Folha 1 ao 10", one: "número", the: l => `o ${l}`, other: "outro número", here: "neste número",
@@ -601,6 +653,8 @@ const SETS = {
              all: "todas as cursivas minúsculas", done: "todas as cursivas minúsculas", pick: "uma letra" },
   cursivaMai: { G: CURSIVE_CAPS, title: "Traçado de Cursivas Maiúsculas", folha: "Folha cursiva A ~ Z", one: "letra", the: l => `a letra ${l}`, other: "outra letra", here: "nesta letra",
                 all: "todas as cursivas maiúsculas", done: "todas as cursivas maiúsculas", pick: "uma letra" },
+  cursivaPal: { G: CURSIVE_WORD_SET, title: "Palavras em Cursiva", folha: "Folha de palavras", one: "palavra", the: l => `a palavra ${l}`, other: "outra palavra", here: "nesta palavra",
+                all: "todas as palavras", done: "todas as palavras", pick: "uma palavra" },
 };
 const sid = d => d.id || d.label; // chave das estrelinhas (a cursiva não divide com a letra bastão)
 // Nome falado de cada número e letra (voz do próprio tablet, em português). As vogais vão como "ah", "eh"…:
@@ -696,7 +750,9 @@ let sheetCelebrated = false; // folha: já comemorou os 10 feitos (repetir um n�
 let shadows = [];           // traços seguintes acompanhados para conferir a ordem
 let bridge = null;          // traçado contínuo: passando de um traço para o próximo sem tirar a caneta
 let lifting = false;        // o traço já chegou na estrelinha; espera tirar a caneta
-const orderText = () => `Ordem errada! Primeiro o traço ${strokeIdx + 1}, depois o ${strokeIdx + 2} ●`;
+const orderText = () => G[digitIdx] && G[digitIdx].word
+  ? (strokeIdx === 0 ? "Comece na bolinha ● e siga a palavra até a estrelinha ★" : "Primeiro termine a palavra, depois o pingo e o corte do t ●")
+  : `Ordem errada! Primeiro o traço ${strokeIdx + 1}, depois o ${strokeIdx + 2} ●`;
 let layout = null;          // folha: onde fica cada número
 let page = 0;               // folha: página mostrada (no celular a folha pode não caber numa tela só)
 // estrelinhas por número/letra (os rótulos não se repetem entre os conjuntos) e folhas completas por conjunto
@@ -713,6 +769,7 @@ const save = () => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(star
 // e leem "one" e as letras com a voz em português. A voz do aparelho fica só como reserva.
 const enAudio = {};
 function speak(label) {
+  if (String(label).length > 2 && isNaN(label)) { falaPt(label); return true; } // palavras: sempre em português
   const key = String(label).toLowerCase(), en = voiceLang === "en";
   if (en && NAMES_EN[key]) {
     try { window.speechSynthesis && speechSynthesis.cancel(); } catch {}
@@ -851,10 +908,31 @@ function drawGuides(g, d, activeStroke) {
     if (!d.font) el("path", { d: st.d, ...ROUND, stroke: "var(--band)", "stroke-width": d.band || 22 }, g);
     el("path", { d: st.d, fill: "none", stroke: "var(--dash)", "stroke-width": 1.3, "stroke-dasharray": "3 3" }, g);
   });
+  // nas palavras, um traço que emenda no anterior (sem tirar a caneta) não ganha bolinha nem número, e a
+  // estrelinha só aparece onde a caneta sai do papel; a numeração conta só onde a caneta encosta
+  const emenda = k => d.word && k > 0 && k < d.strokes.length && dist(startOf(d.strokes[k]), endOf(d.strokes[k - 1])) < 3;
+  const encostadas = d.strokes.filter((st, k) => !emenda(k)).length;
+  let toque = 0;
   return () => d.strokes.forEach((st, k) => {
     if (livre()) return; // livre: sem bolinha, estrelinha e número do traço
     const a = startOf(st), b = endOf(st);
     const m = el("g", { "pointer-events": "none" }, g);
+    if (d.word) {
+      if (!emenda(k)) toque++;
+      if (k === activeStroke && !emenda(k)) {
+        const c = el("circle", { class: "pulse", cx: a.x, cy: a.y, r: 9, fill: "none", stroke: "var(--ok)", "stroke-width": 2 }, m);
+        el("animate", { attributeName: "r", values: "7;13;7", dur: "1.2s", repeatCount: "indefinite" }, c);
+        el("animate", { attributeName: "opacity", values: "1;0.3;1", dur: "1.2s", repeatCount: "indefinite" }, c);
+      }
+      if (!isTap(st) && level === "ajuda" && !emenda(k + 1)) el("path", { d: starPath(b.x, b.y, 6.5), fill: "var(--mark)" }, m);
+      if (emenda(k)) return;
+      el("circle", { cx: a.x, cy: a.y, r: 4.5, fill: "var(--mark)" }, m);
+      if (encostadas > 1) {
+        const t = el("text", { x: a.x - 11, y: a.y - 6, "font-size": 9, "font-weight": 800, fill: "var(--accent)", "font-family": "var(--font-body)" }, m);
+        t.textContent = String(toque);
+      }
+      return;
+    }
     if (k === activeStroke) {
       const c = el("circle", { class: "pulse", cx: a.x, cy: a.y, r: 9, fill: "none", stroke: "var(--ok)", "stroke-width": 2 }, m);
       el("animate", { attributeName: "r", values: "7;13;7", dur: "1.2s", repeatCount: "indefinite" }, c);
@@ -1096,7 +1174,7 @@ function setKind(k, m = mode) {
 
 // ----- tela inicial -----
 // passo 1: números, minúsculas, maiúsculas (cursiva em breve); passo 2: treino ou folha
-const KIND_NAMES = { numeros: "Números", letras: "Letras minúsculas", maiusculas: "Letras maiúsculas", cursiva: "Cursiva minúscula", cursivaMai: "Cursiva maiúscula" };
+const KIND_NAMES = { numeros: "Números", letras: "Letras minúsculas", maiusculas: "Letras maiúsculas", cursiva: "Cursiva minúscula", cursivaMai: "Cursiva maiúscula", cursivaPal: "Palavras em cursiva" };
 const inHome = () => document.body.classList.contains("home");
 function showHome(step = "kinds") {
   clearTimers(); resetTrace(); demo = null; status = "idle";
@@ -1535,7 +1613,7 @@ function onUp(e) {
   doneInk.push(ink); ink = []; track = null;
   if (strokeIdx < d.strokes.length - 1) {
     strokeIdx++; status = "idle";
-    setMsg(livre() ? "Muito bem! Agora o próximo traço" : `Muito bem! Agora o traço ${strokeIdx + 1}: comece na bolinha ●`); beep("ok"); render(); return;
+    setMsg(livre() ? "Muito bem! Agora o próximo traço" : d.word ? "Muito bem! Continue ✏️" : `Muito bem! Agora o traço ${strokeIdx + 1}: comece na bolinha ●`); beep("ok"); render(); return;
   }
   if (mode === "folha") return finishSheetDigit();
   const firstTimeAll = !allTrained();
