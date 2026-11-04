@@ -154,7 +154,7 @@
   .home-sub { position: relative; z-index: 1; margin: 4px 0 -6px; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.1rem, 2.6vw, 1.5rem); color: var(--muted); }
   #home-games { width: min(100%, 900px); }
   @media (min-width: 640px) { #home-games { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-  .c6 { background: #d9822b; } .c7 { background: #2f8f9d; } .c8 { background: #6a8f1f; } .c9 { background: #b5651d; }
+  .c6 { background: #d9822b; } .c7 { background: #2f8f9d; } .c8 { background: #6a8f1f; } .c9 { background: #b5651d; } .c10 { background: #3d7ea6; }
   /* sons das letras */
   body.missao nav, body.missao #prev, body.missao #next, body.missao .tabs { display: none !important; }
   .niveis button.par-sons { font-family: "Comic Neue", "Comic Sans MS", cursive; font-weight: 700; letter-spacing: 0.1em; white-space: nowrap; padding: 4px 12px; }
@@ -302,6 +302,7 @@
     <button class="card c3" data-kind="maiusculas"><span class="glyph letra">ABC</span><span class="name">Letras maiúsculas</span></button>
     <button class="card c4" data-kind="cursiva"><span class="glyph cursiva">abc</span><span class="name">Cursiva minúscula</span></button>
     <button class="card c5" data-kind="cursivaMai"><span class="glyph cursiva">ABC</span><span class="name">Cursiva maiúscula</span></button>
+    <button class="card c10" data-kind="bastaoPal"><span class="glyph letra">bola</span><span class="name">Palavras em letra bastão</span></button>
     <button class="card c9" data-kind="cursivaPal"><span class="glyph cursiva">bola</span><span class="name">Palavras em cursiva</span></button>
   </div>
   <div class="home-grid" id="home-modes" hidden>
@@ -692,6 +693,24 @@ function buildCursiveWord(word) {
 }
 const CURSIVE_WORD_SET = CURSIVE_WORDS.map(buildCursiveWord);
 
+// Palavras em letra bastão (as mesmas da cursiva): letras separadas, lado a lado, cada uma com o desenho e a
+// ordem de traços das minúsculas (LETTER_PATHS); a faixa cinza é a fonte, uma letra de cada vez na sua posição.
+// Levanta a caneta entre uma letra e outra (os traços de uma mesma letra contínua continuam emendando).
+const LETRA_BASTAO = Object.fromEntries(LETTER_PATHS.map(([l, x0, width, strokes]) => [l, { x0, width, strokes }]));
+function buildPrintWord(word) {
+  const strokes = [], partes = []; let x = 0, x0 = 0;
+  for (const l of word) {
+    const L = LETRA_BASTAO[l];
+    if (!partes.length) x0 = L.x0;
+    partes.push({ label: l, x });
+    L.strokes.forEach(raw => strokes.push(movePath(raw, x)));
+    x += L.width;
+  }
+  return { label: word, id: "bastao-" + word, word: true, font: true, fontParts: partes, x0, width: x,
+    height: LETTER_FONT.height, cont: true, strokes: strokes.map(buildStroke) };
+}
+const PRINT_WORD_SET = CURSIVE_WORDS.map(buildPrintWord);
+
 // Os dois conjuntos do aplicativo e os textos de cada um
 const SETS = {
   numeros: { G: DIGITS, title: "Traçado de Números 1 ~ 10", folha: "Folha 1 ao 10", one: "número", the: l => `o ${l}`, other: "outro número", here: "neste número",
@@ -706,6 +725,8 @@ const SETS = {
                 all: "todas as cursivas maiúsculas", done: "todas as cursivas maiúsculas", pick: "uma letra" },
   cursivaPal: { G: CURSIVE_WORD_SET, title: "Palavras em Cursiva", folha: "Folha de palavras", one: "palavra", the: l => `a palavra ${l}`, other: "outra palavra", here: "nesta palavra",
                 all: "todas as palavras", done: "todas as palavras", pick: "uma palavra" },
+  bastaoPal: { G: PRINT_WORD_SET, title: "Palavras em Letra Bastão", folha: "Folha de palavras", one: "palavra", the: l => `a palavra ${l}`, other: "outra palavra", here: "nesta palavra",
+               all: "todas as palavras", done: "todas as palavras", pick: "uma palavra" },
 };
 const sid = d => d.id || d.label; // chave das estrelinhas (a cursiva não divide com a letra bastão)
 // Nome falado de cada número e letra (voz do próprio tablet, em português). As vogais vão como "ah", "eh"…:
@@ -802,7 +823,8 @@ let shadows = [];           // traços seguintes acompanhados para conferir a or
 let bridge = null;          // traçado contínuo: passando de um traço para o próximo sem tirar a caneta
 let lifting = false;        // o traço já chegou na estrelinha; espera tirar a caneta
 const orderText = () => G[digitIdx] && G[digitIdx].word
-  ? (strokeIdx === 0 ? "Comece na bolinha ● e siga a palavra até a estrelinha ★" : "Primeiro termine a palavra, depois o pingo e o corte do t ●")
+  ? (!G[digitIdx].lined ? "Ordem errada! Siga os números das bolinhas ●"
+    : strokeIdx === 0 ? "Comece na bolinha ● e siga a palavra até a estrelinha ★" : "Primeiro termine a palavra, depois o pingo e o corte do t ●")
   : `Ordem errada! Primeiro o traço ${strokeIdx + 1}, depois o ${strokeIdx + 2} ●`;
 let layout = null;          // folha: onde fica cada número
 let page = 0;               // folha: página mostrada (no celular a folha pode não caber numa tela só)
@@ -908,7 +930,7 @@ function renderHeader() {
   $("demo").hidden = livre();
   document.body.classList.toggle("folha", mode === "folha");
   document.body.classList.toggle("letras", kind !== "numeros");
-  document.body.classList.toggle("palavras", kind === "cursivaPal");
+  document.body.classList.toggle("palavras", kind === "cursivaPal" || kind === "bastaoPal");
   nav.hidden = mode !== "treino";
   nav.setAttribute("aria-label", "Escolher " + T.one);
   $("foot-treino").hidden = mode !== "treino";
@@ -944,10 +966,13 @@ const ROUND = { fill: "none", "stroke-linecap": "round", "stroke-linejoin": "rou
 // guias de um número (faixa, tracejado, bolinhas e estrelinhas) num grupo já posicionado
 function drawGuides(g, d, activeStroke) {
   if (d.font) {
-    // a letra cinza é a própria fonte (Comic Neue), um pouco engrossada para servir de faixa
-    const t = el("text", { x: 0, y: LETTER_FONT.base, "font-family": LETTER_FONT.family, "font-weight": 700, "font-size": LETTER_FONT.size,
-      fill: "var(--band)", stroke: "var(--band)", "stroke-width": 7, "stroke-linejoin": "round" }, g);
-    t.textContent = d.label;
+    // a letra cinza é a própria fonte (Comic Neue), um pouco engrossada para servir de faixa; na palavra em
+    // letra bastão, cada letra vai na sua posição (a mesma dos caminhos)
+    for (const parte of d.fontParts || [{ label: d.label, x: 0 }]) {
+      const t = el("text", { x: parte.x, y: LETTER_FONT.base, "font-family": LETTER_FONT.family, "font-weight": 700, "font-size": LETTER_FONT.size,
+        fill: "var(--band)", stroke: "var(--band)", "stroke-width": 7, "stroke-linejoin": "round" }, g);
+      t.textContent = parte.label;
+    }
   }
   if (d.lined) {
     // pauta do caderno de cursiva: base contínua, as outras tracejadas
@@ -1070,7 +1095,7 @@ function computeLayout() {
   // Nunca diminui abaixo de K_MIN (no celular as letras ficariam minúsculas): se não couber, a folha vira páginas.
   // A minúscula só ocupa o meio do quadradinho (em cima e embaixo é lugar das hastes do b e do g):
   // encolhida como a maiúscula, o a, o c e o e ficariam miúdos. Por isso ela não diminui: vira páginas.
-  const K_MIN = kind === "letras" || kind.startsWith("cursiva") ? 0.75 : 0.55;
+  const K_MIN = kind === "letras" || kind.startsWith("cursiva") || kind === "bastaoPal" ? 0.75 : 0.55;
   let k = 0.75, rows;
   for (;;) {
     rows = balanced(W / k, all);
@@ -1227,7 +1252,7 @@ function setKind(k, m = mode) {
 
 // ----- tela inicial -----
 // passo 1: números, minúsculas, maiúsculas (cursiva em breve); passo 2: treino ou folha
-const KIND_NAMES = { numeros: "Números", letras: "Letras minúsculas", maiusculas: "Letras maiúsculas", cursiva: "Cursiva minúscula", cursivaMai: "Cursiva maiúscula", cursivaPal: "Palavras em cursiva" };
+const KIND_NAMES = { numeros: "Números", letras: "Letras minúsculas", maiusculas: "Letras maiúsculas", cursiva: "Cursiva minúscula", cursivaMai: "Cursiva maiúscula", cursivaPal: "Palavras em cursiva", bastaoPal: "Palavras em letra bastão" };
 const inHome = () => document.body.classList.contains("home");
 function showHome(step = "kinds") {
   clearTimers(); resetTrace(); demo = null; status = "idle";
@@ -1706,7 +1731,7 @@ function finishSheetDigit() {
   const falta = G.map((d, i) => i).filter(i => !(i in sheetInk));
   if (!falta.length && !sheetCelebrated) {
     sheetCelebrated = true; sheets[kind] = (sheets[kind] || 0) + 1; save(); beep("fim");
-    setMsg((errors ? `Parabéns! Você fez ${T.done} sozinho! ★ (${errors} ${errors === 1 ? "erro" : "erros"})` : `Parabéns! Você fez ${T.done} sozinho, sem nenhum erro! ★`) + ` Pode repetir ${kind === "cursivaPal" ? "qualquer palavra" : kind !== "numeros" ? "qualquer letra" : "qualquer número"}.`, "ok");
+    setMsg((errors ? `Parabéns! Você fez ${T.done} sozinho! ★ (${errors} ${errors === 1 ? "erro" : "erros"})` : `Parabéns! Você fez ${T.done} sozinho, sem nenhum erro! ★`) + ` Pode repetir ${kind === "cursivaPal" || kind === "bastaoPal" ? "qualquer palavra" : kind !== "numeros" ? "qualquer letra" : "qualquer número"}.`, "ok");
     render(); return;
   }
   beep("ok");
