@@ -394,6 +394,10 @@ const BACK_LIMIT = 20, WINDOW_BACK = 60, WINDOW_AHEAD = 45, STEP = 4, END_SLACK 
 // Tolerâncias (em unidades do desenho): na folha os números são pequenos, então a margem é maior.
 const TOL_TREINO = { start: 24, off: 32 };
 const TOL_FOLHA = { start: 32, off: 42 };
+// Cursiva (letras e palavras): a letra é bem menor (altura-x 42) e as partes ficam perto umas das outras;
+// com a folga dos números, subir pelo lado errado do "o" contava como a entrada do lado certo.
+const TOL_CURSIVA_TREINO = { start: 16, off: 18 };
+const TOL_CURSIVA_FOLHA = { start: 24, off: 28 };
 const PATHS = [
   ["1", 100, ["M50 15 L50 125"]],
   ["2", 100, ["M22 45 C22 10, 80 8, 80 42 C80 62, 60 78, 20 125 L82 125"]],
@@ -1541,9 +1545,15 @@ $("go-fono").onclick = () => { abrirJogo("jogo-fono", "Sons das letras"); fonoDe
 // ----- caneta -----
 // no livre a criança não vê a bolinha: um pouco mais de folga para encostar perto do começo
 const tol = () => {
-  const t = mode === "folha" ? TOL_FOLHA : TOL_TREINO;
+  const cursiva = G[digitIdx] && G[digitIdx].lined;
+  const t = mode === "folha" ? (cursiva ? TOL_CURSIVA_FOLHA : TOL_FOLHA) : (cursiva ? TOL_CURSIVA_TREINO : TOL_TREINO);
   return livre() ? { ...t, start: t.start + 8 } : t;
 };
+// Na cursiva: se a caneta está bem mais perto de uma parte que ainda vem (o lado direito do "o" enquanto
+// devia estar na entrada pelo lado esquerdo), esse trecho não faz o traço atual andar.
+const pertoDe = (st, p) => { let m = Infinity; for (let k = 0; k < st.pts.length; k += 2) m = Math.min(m, dist(p, st.pts[k])); return m; };
+const noTrechoQueVem = (d, st, p) => d.lined &&
+  d.strokes.slice(strokeIdx + 1, strokeIdx + 3).some(o => !isTap(o) && pertoDe(o, p) + 8 < pertoDe(st, p));
 const offset = () => mode === "folha" ? layout.cells[digitIdx] : { ox: 0, oy: 0 };
 const local = p => { const o = offset(); return { x: p.x - o.ox, y: p.y - o.oy }; };
 
@@ -1642,6 +1652,7 @@ svg.addEventListener("pointermove", e => {
     const st = d.strokes[strokeIdx];
     for (const sh of shadows) stepTrack(sh.st, sh.tr, lp, tol());
     if (track.s < 8 && shadows.some(sh => sh.tr.s > 20)) { fail(orderText()); return; }
+    if (noTrechoQueVem(d, st, lp)) { track.anchor = lp; continue; }
     const err = stepTrack(st, track, lp, tol());
     // depois de chegar na estrelinha, rabiscar sem tirar a caneta não é erro: só pede para tirar a caneta
     if (err && track.s >= st.len - 12) { lifting = true; setMsg("Muito bem! Agora tire a caneta da tela ✋"); continue; }
