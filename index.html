@@ -1626,6 +1626,10 @@ function bridgeStep(p, lp) {
   const mx = lp.x - prev.x, my = lp.y - prev.y, moved = Math.hypot(mx, my);
   if (moved < 3) return;
   bridge.last = lp;
+  // na cursiva a passagem é só a virada da caneta na quina (o próximo traço começa ali mesmo): andar mais
+  // que isso sem pegar o caminho é ir para o lado errado (ex.: dar a volta do "o" no sentido do relógio)
+  bridge.andou = (bridge.andou || 0) + moved;
+  if (d.lined && bridge.andou > 28) { fail(ERROR_TEXT["sentido-errado"]); return; }
   if (dist(lp, startOf(next)) > 16) return;
   const t = tangentAt(next, 4);
   if ((t.x * mx + t.y * my) / moved < 0.5) return;
@@ -1647,7 +1651,7 @@ svg.addEventListener("pointermove", e => {
     const p = toSvg(ev); if (!p) continue;
     ink[ink.length - 1].push(p);
     const lp = local(p);
-    if (bridge) { bridgeStep(p, lp); continue; }
+    if (bridge) { bridgeStep(p, lp); if (!track) return; continue; } // a passagem pode dar erro
     if (lifting) continue; // traço já chegou na estrelinha: o resto até tirar a caneta não conta
     const st = d.strokes[strokeIdx];
     for (const sh of shadows) stepTrack(sh.st, sh.tr, lp, tol());
