@@ -88,6 +88,9 @@
   /* letras: botões menores, na mesma fonte da letra que o aluno traça */
   body.letras nav { gap: 6px; }
   body.letras nav button { font-family: "Comic Neue", "Comic Sans MS", cursive; font-weight: 700; min-width: 2.6rem; padding: 0 8px; font-size: clamp(1.3rem, 2.6vw, 1.7rem); }
+  /* palavras: são muitas e compridas; uma linha só, que rola para o lado, para sobrar a tela para a palavra */
+  body.palavras nav { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; padding: 8px 2px 2px; scrollbar-width: thin; }
+  body.palavras nav button { flex: none; padding: 0 12px; font-size: clamp(1.1rem, 2.2vw, 1.4rem); }
   nav .badge {
     position: absolute; top: -9px; right: -9px; background: var(--star); color: #1d2a33; border-radius: 999px;
     font-family: var(--font-body); font-size: 0.72rem; padding: 1px 6px; line-height: 1.4;
@@ -604,33 +607,37 @@ function movePath(d, dx) {
   return d.match(/[MLC]|-?\d+(?:\.\d+)?/g).map(t => /[MLC]/.test(t) ? t : (k++ % 2 === 0 ? +t + dx : +t)).join(" ");
 }
 const fimDe = d => { const p = parsePath(d); return p[p.length - 1]; };
+// A junção é uma curva só: sai da letra anterior na direção em que ela terminou e entra na seguinte na
+// direção da subida dela — sem trecho reto na linha (parecia uma falha entre as letras) e sem quina.
+// Depois do o, v, w e b (que terminam no alto) a curva segue lá em cima e encontra a próxima letra no ponto
+// em que a entrada dela chega a essa altura; nas outras, encontra a entrada já subindo.
+const APERTO = 8; // aproxima as letras na palavra
+const direcao = (a, b) => { const n = Math.hypot(b.x - a.x, b.y - a.y) || 1; return { x: (b.x - a.x) / n, y: (b.y - a.y) / n }; };
+function juntar(anterior, d) {
+  const Q = parsePath(anterior), fim = Q[Q.length - 1], P = parsePath(d), alto = fim.y < 80;
+  let j = P.findIndex((p, i) => i > 0 && p.x >= fim.x + 6 && (alto ? p.y <= fim.y + 6 : p.y <= 86));
+  if (j < 0) j = 1;
+  const alvo = P[j], sai = direcao(Q[Math.max(0, Q.length - 4)], fim);
+  const entra = direcao(P[Math.max(0, j - 2)], P[Math.min(P.length - 1, j + 2)]);
+  const L = Math.hypot(alvo.x - fim.x, alvo.y - fim.y) * 0.4;
+  const c1 = { x: fim.x + sai.x * L, y: fim.y + sai.y * L }, c2 = { x: alvo.x - entra.x * L, y: alvo.y - entra.y * L };
+  const curva = [];
+  for (let t = 0.1; t <= 1.0001; t += 0.1) {
+    const u = 1 - t;
+    curva.push({ x: u * u * u * fim.x + 3 * u * u * t * c1.x + 3 * u * t * t * c2.x + t * t * t * alvo.x,
+                 y: u * u * u * fim.y + 3 * u * u * t * c1.y + 3 * u * t * t * c2.y + t * t * t * alvo.y });
+  }
+  return anterior + " " + [...curva, ...P.slice(j + 1)].map(p => `L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+}
 function buildCursiveWord(word) {
-  const strokes = [], depois = []; let x = 0, fim = null, largura = 0;
+  const strokes = [], depois = []; let fim = null, largura = 0;
   for (const l of word) {
     const L = LETRA_CURSIVA[l];
-    const dx = fim ? fim.x - 6 : 0; // a entrada de toda letra começa em x=6 na linha de base
+    const dx = fim ? fim.x - 6 - APERTO : 0; // a entrada de toda letra começa em x=6 na linha de base
     L.strokes.forEach((raw, k) => {
-      let d = movePath(raw, dx);
+      const d = movePath(raw, dx);
       if (buildStroke(d).len < 4 || (l === "t" && k === 2)) { depois.push(d); return; } // pingo e corte do t: no fim
-      if (k === 0 && fim && fim.y < 80) {
-        // o, v, w e b terminam no alto: a ligação segue lá em cima (não desce até a linha) e encontra a
-        // letra seguinte no ponto em que a entrada dela chega a essa altura
-        const P = parsePath(d);
-        let j = P.findIndex((p, i) => i > 0 && p.y <= fim.y + 6);
-        if (j < 0) j = 1;
-        const alvo = P[j], meio = { x: (fim.x + alvo.x) / 2, y: Math.min(fim.y, alvo.y) - 2 };
-        const liga = [0.25, 0.5, 0.75, 1].map(t => ({ // curvinha de fim até alvo, passando um pouco acima
-          x: (1 - t) * (1 - t) * fim.x + 2 * (1 - t) * t * meio.x + t * t * alvo.x,
-          y: (1 - t) * (1 - t) * fim.y + 2 * (1 - t) * t * meio.y + t * t * alvo.y }));
-        strokes[strokes.length - 1] += " " + [...liga, ...P.slice(j + 1)].map(p => `L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
-        return;
-      }
-      if (k === 0 && fim) {
-        // a entrada sai de onde a letra anterior terminou e continua o mesmo traço
-        const resto = d.replace(/^M\s*-?[\d.]+\s+-?[\d.]+/, "");
-        strokes[strokes.length - 1] += resto.replace(/^\s*/, " ").replace(/^ (C|L)/, " $1");
-        return;
-      }
+      if (k === 0 && fim) { strokes[strokes.length - 1] = juntar(strokes[strokes.length - 1], d); return; }
       strokes.push(d);
     });
     fim = fimDe(strokes[strokes.length - 1]);
@@ -857,6 +864,7 @@ function renderHeader() {
   $("demo").hidden = livre();
   document.body.classList.toggle("folha", mode === "folha");
   document.body.classList.toggle("letras", kind !== "numeros");
+  document.body.classList.toggle("palavras", kind === "cursivaPal");
   nav.hidden = mode !== "treino";
   nav.setAttribute("aria-label", "Escolher " + T.one);
   $("foot-treino").hidden = mode !== "treino";
@@ -878,11 +886,12 @@ function renderNav() {
     const b = document.createElement("button");
     b.textContent = d.label;
     b.setAttribute("aria-current", k === digitIdx ? "true" : "false");
-    b.setAttribute("aria-label", (kind !== "numeros" ? "Letra " : "Número ") + d.label);
+    b.setAttribute("aria-label", (d.word ? "Palavra " : kind !== "numeros" ? "Letra " : "Número ") + d.label);
     if (stars[sid(d)]) { const s = document.createElement("span"); s.className = "badge"; s.textContent = "★" + stars[sid(d)]; b.appendChild(s); }
     b.onclick = () => goTo(k);
     nav.appendChild(b);
   });
+  nav.querySelector('[aria-current="true"]')?.scrollIntoView({ inline: "center", block: "nearest" });
 }
 
 // ----- desenho -----
@@ -1573,9 +1582,11 @@ function bridgeStep(p, lp) {
   bridge = null;
   doneInk.push(ink); ink = [[p]]; strokeIdx++;
   track = { s: 0, back: 0, anchor: lp, drawn: 0 };
-  shadows = d.strokes.slice(strokeIdx + 1).filter(o => typeof beginTrack(o, lp, null, tol()) !== "string")
+  // na palavra os trechos emendados vêm um depois do outro: não confere a ordem (com as letras juntas,
+  // o começo de uma letra fica perto do traço da anterior e parecia um pulo)
+  shadows = d.word ? [] : d.strokes.slice(strokeIdx + 1).filter(o => typeof beginTrack(o, lp, null, tol()) !== "string")
     .map(o => ({ st: o, tr: beginTrack(o, lp, null, tol()) }));
-  setMsg(livre() ? "✏️" : `Isso! Agora o traço ${strokeIdx + 1}, até a estrelinha ★`);
+  setMsg(livre() ? "✏️" : d.word ? "Isso! Continue até a estrelinha ★" : `Isso! Agora o traço ${strokeIdx + 1}, até a estrelinha ★`);
 }
 
 svg.addEventListener("pointermove", e => {
@@ -1640,7 +1651,7 @@ function finishSheetDigit() {
   const falta = G.map((d, i) => i).filter(i => !(i in sheetInk));
   if (!falta.length && !sheetCelebrated) {
     sheetCelebrated = true; sheets[kind] = (sheets[kind] || 0) + 1; save(); beep("fim");
-    setMsg((errors ? `Parabéns! Você fez ${T.done} sozinho! ★ (${errors} ${errors === 1 ? "erro" : "erros"})` : `Parabéns! Você fez ${T.done} sozinho, sem nenhum erro! ★`) + ` Pode repetir ${kind !== "numeros" ? "qualquer letra" : "qualquer número"}.`, "ok");
+    setMsg((errors ? `Parabéns! Você fez ${T.done} sozinho! ★ (${errors} ${errors === 1 ? "erro" : "erros"})` : `Parabéns! Você fez ${T.done} sozinho, sem nenhum erro! ★`) + ` Pode repetir ${kind === "cursivaPal" ? "qualquer palavra" : kind !== "numeros" ? "qualquer letra" : "qualquer número"}.`, "ok");
     render(); return;
   }
   beep("ok");
