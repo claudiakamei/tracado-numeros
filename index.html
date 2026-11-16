@@ -156,7 +156,7 @@
   @media (min-width: 1000px) { #home-games { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
   .c6 { background: #d9822b; } .c7 { background: #2f8f9d; } .c8 { background: #6a8f1f; } .c9 { background: #b5651d; } .c10 { background: #3d7ea6; } .c11 { background: #8a3fa0; }
   /* pares e ímpares: números dados e quadradinhos para escrever com a caneta */
-  .dois-board { display: flex; flex-direction: column; gap: 14px; width: min(100%, 1000px); }
+  .jogo-board.dois-board { display: flex; flex-direction: column; gap: 14px; width: min(100%, 1000px); }
   .dois-ferramentas { display: flex; gap: 8px; flex-wrap: wrap; }
   .dois-ferramentas .sel { border-color: var(--accent); background: var(--info-soft); color: var(--accent); }
   .dois-linha { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding: 6px 0; }
@@ -167,6 +167,13 @@
   .dois-caixa.atual { border-color: var(--accent); }
   .dois-caixa.certa { border-color: var(--ok); background-color: var(--ok-soft); }
   .dois-caixa.errada { border-color: var(--err); background-color: var(--err-soft); animation: treme 0.35s; }
+  /* folha 1: círculos como a folha 3A (ímpares rosa, pares azuis; os que faltam em branco para escrever) */
+  .dois-linha.circ { --c: clamp(54px, 7.4vw, 80px); gap: 6px; }
+  .dois-linha.circ.junta { border-top: 0; padding-top: 0; margin-top: -8px; }
+  .dois-num.circ { width: var(--c); height: var(--c); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #1d2a33; font-size: clamp(1.4rem, 3.2vw, 2rem); }
+  .dois-num.circ.impar { background: #f6c6d3; } .dois-num.circ.par { background: #bfe0f2; }
+  .dois-caixa.circ { width: var(--c); height: var(--c); border-radius: 50%; border: 3px solid #9aa6ad; background-image: none; }
+  .dois-caixa.circ.atual { border-color: var(--accent); } .dois-caixa.circ.certa { border-color: var(--ok); } .dois-caixa.circ.errada { border-color: var(--err); }
   /* sons das letras */
   body.missao nav, body.missao #prev, body.missao #next, body.missao .tabs { display: none !important; }
   .niveis button.par-sons { font-family: "Comic Neue", "Comic Sans MS", cursive; font-weight: 700; letter-spacing: 0.1em; white-space: nowrap; padding: 4px 12px; }
@@ -1679,17 +1686,24 @@ function confereNumero(tracos, esperado) {
 }
 
 // ----- Pares e ímpares (contar de 2 em 2) -----
-// 5 folhas como as da unidade, cada uma com uma linha de ímpares (1 a 21) e uma de pares (2 a 22); o que muda
-// é quais números faltam. A criança escreve com a caneta no quadradinho; quando para de escrever, o app
-// reconhece o número e confere na hora (certo fica verde; errado avisa e apaga para escrever de novo).
+// Folha 1: os números de 1 a 20 em sequência, em círculos (ímpares rosa, pares azuis, como a folha 3A da
+// unidade), em dois blocos de duas linhas — no primeiro faltam ímpares, no segundo faltam pares.
+// Folhas 2 a 6: uma linha de ímpares (1 a 21) e uma de pares (2 a 22); o que muda é quais números faltam.
+// A criança escreve com a caneta; quando para de escrever, o app reconhece o número e confere na hora
+// (certo fica verde; errado avisa e apaga para escrever de novo).
+const sequencia = (de, ate, passo) => { const a = []; for (let n = de; n <= ate; n += passo) a.push(n); return a; };
+const linhaDeDois = (inicio, falta) => ({ nums: sequencia(inicio, inicio + 20, 2), falta: new Set(sequencia(0, 10, 1).filter(falta)) });
+const linhaFaltando = (de, ate, faltam) => ({ nums: sequencia(de, ate, 1), falta: new Set(faltam.map(n => n - de)), circulos: true });
 const DOIS_FOLHAS = [
-  { comeca: [1, 2], falta: i => i % 3 === 2 },          // 1 3 _ 7 9 _ 13…
-  { comeca: [2, 1], falta: i => i % 2 === 1 },          // 2 _ 6 _ 10…
-  { comeca: [1, 2], falta: i => i % 3 !== 0 },          // 1 _ _ 7 _ _ 13…
-  { comeca: [2, 1], falta: i => i !== 0 && i !== 5 },   // 2 _ _ _ _ 12 _ _ _ _ _
-  { comeca: [1, 2], falta: i => i !== 0 },              // só o primeiro
+  [linhaFaltando(1, 10, [3, 5, 7, 9]), linhaFaltando(11, 20, [11, 15, 17, 19]),          // faltam ímpares
+   linhaFaltando(1, 10, [4, 6, 8, 10]), linhaFaltando(11, 20, [12, 16, 18, 20])],        // faltam pares
+  [linhaDeDois(1, i => i % 3 === 2), linhaDeDois(2, i => i % 3 === 2)],                  // 1 3 _ 7 9 _ 13…
+  [linhaDeDois(2, i => i % 2 === 1), linhaDeDois(1, i => i % 2 === 1)],                  // 2 _ 6 _ 10…
+  [linhaDeDois(1, i => i % 3 !== 0), linhaDeDois(2, i => i % 3 !== 0)],                  // 1 _ _ 7 _ _ 13…
+  [linhaDeDois(2, i => i !== 0 && i !== 5), linhaDeDois(1, i => i !== 0 && i !== 5)],    // 2 _ _ _ _ 12 _ _ _ _ _
+  [linhaDeDois(1, i => i !== 0), linhaDeDois(2, i => i !== 0)],                          // só o primeiro
 ];
-const DOIS_KEY = "jogo-dois-feitos", DOIS_ESPERA = 1000;
+const DOIS_KEY = "jogo-dois-feitos-v2", DOIS_ESPERA = 1000; // v2: a folha nova virou a 1ª (as marcas antigas não batem)
 let doisFeitos = new Set(lerJSON(DOIS_KEY, [])), doisFolha = 0, doisModo = "lapis", doisCaixas = [], doisUltima = null;
 function doisBotoes() {
   const box = $("dois-folhas"); box.innerHTML = "";
@@ -1703,19 +1717,21 @@ function doisBotoes() {
 function doisAbrir(i) {
   clearTimers(); doisFolha = i; doisCaixas = []; doisUltima = null;
   const box = $("dois-linhas"); box.innerHTML = "";
-  for (const inicio of DOIS_FOLHAS[i].comeca) {
-    const linha = document.createElement("div"); linha.className = "dois-linha";
-    for (let k = 0; k < 11; k++) {
-      const n = inicio + 2 * k;
-      if (!DOIS_FOLHAS[i].falta(k)) { const s = document.createElement("span"); s.className = "dois-num"; s.textContent = n; linha.appendChild(s); continue; }
-      const c = document.createElement("canvas"); c.className = "dois-caixa"; c.setAttribute("aria-label", "Escreva o número");
+  DOIS_FOLHAS[i].forEach((L, li) => {
+    const linha = document.createElement("div");
+    // nos círculos, as duas linhas de cada bloco ficam juntas (como a folha); o tracejado separa os blocos
+    linha.className = "dois-linha" + (L.circulos ? " circ" + (li % 2 ? " junta" : "") : "");
+    L.nums.forEach((n, k) => {
+      const cor = L.circulos ? (n % 2 ? " circ impar" : " circ par") : "";
+      if (!L.falta.has(k)) { const s = document.createElement("span"); s.className = "dois-num" + cor; s.textContent = n; linha.appendChild(s); return; }
+      const c = document.createElement("canvas"); c.className = "dois-caixa" + (L.circulos ? " circ" : ""); c.setAttribute("aria-label", "Escreva o número");
       linha.appendChild(c);
       doisCaixas.push(doisCaixa(c, n));
-    }
+    });
     box.appendChild(linha);
-  }
+  });
   doisBotoes(); doisMarcaAtual();
-  setMsg("Complete contando de 2 em 2. Escreva o número no quadradinho ✏️");
+  setMsg(doisInstrucao() + " ✏️");
 }
 function doisCaixa(c, esperado) {
   const cx = { c, esperado, tracos: [], ok: false, timer: null, ativo: null };
@@ -1788,8 +1804,9 @@ $("dois-desfazer").onclick = () => {
   clearTimeout(cx.timer); cx.tracos.pop(); cx.c.classList.remove("errada"); doisDesenha(cx);
   if (cx.tracos.length) cx.timer = setTimeout(() => doisConfere(cx), DOIS_ESPERA);
 };
-$("dois-ouvir").onclick = () => falaPt("Complete contando de 2 em 2.");
-$("go-dois").onclick = () => { abrirJogo("jogo-dois", "Pares e ímpares"); doisFerramenta("lapis"); doisAbrir(doisFolha); if (sound) falaPt("Complete contando de 2 em 2."); };
+const doisInstrucao = () => doisFolha === 0 ? "Preencha cada círculo com o número que está faltando." : "Complete contando de 2 em 2.";
+$("dois-ouvir").onclick = () => falaPt(doisInstrucao());
+$("go-dois").onclick = () => { abrirJogo("jogo-dois", "Pares e ímpares"); doisFerramenta("lapis"); doisAbrir(doisFolha); if (sound) falaPt(doisInstrucao()); };
 
 // ----- caneta -----
 // no livre a criança não vê a bolinha: um pouco mais de folga para encostar perto do começo
