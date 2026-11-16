@@ -1855,7 +1855,7 @@ $("go-dois").onclick = () => { abrirJogo("jogo-dois", "Pares e ímpares"); doisF
 // app confere. Aceita "trinta e dois" ou "32", olhando todas as interpretações que o reconhecedor devolver.
 // Na ordem (até 10, até 30) ou fora de ordem (10 números sorteados, até 10/30/50/100/1000).
 const NUM_PALAVRAS = {
-  zero: 0, um: 1, uma: 1, dois: 2, duas: 2, tres: 3, quatro: 4, cinco: 5, seis: 6, meia: 6, sete: 7, oito: 8, nove: 9,
+  zero: 0, um: 1, uma: 1, hum: 1, un: 1, uhm: 1, hun: 1, dois: 2, duas: 2, tres: 3, quatro: 4, cinco: 5, seis: 6, meia: 6, sete: 7, oito: 8, nove: 9,
   dez: 10, onze: 11, doze: 12, treze: 13, quatorze: 14, catorze: 14, quinze: 15, dezesseis: 16, dezasseis: 16,
   dezessete: 17, dezassete: 17, dezoito: 18, dezenove: 19, dezanove: 19, vinte: 20, trinta: 30, quarenta: 40,
   cinquenta: 50, sessenta: 60, setenta: 70, oitenta: 80, noventa: 90, cem: 100, cento: 100, duzentos: 200, duzentas: 200,
@@ -1944,23 +1944,28 @@ function falaOuvir() {
   if (!Reconhecedor || !fala) return;
   falaPara();
   const rec = new Reconhecedor();
-  rec.lang = "pt-BR"; rec.interimResults = false; rec.maxAlternatives = 5; rec.continuous = false;
+  // interimResults: o reconhecedor vai mostrando o que entende enquanto a criança fala; se o número certo
+  // aparecer, já aceita (palavras curtas como "um" às vezes nunca chegam ao resultado final)
+  rec.lang = "pt-BR"; rec.interimResults = true; rec.maxAlternatives = 5; rec.continuous = false;
   falaRec = rec;
   let respondeu = false;
+  const n = fala.numeros[fala.i];
   rec.onstart = () => { $("fala-mic").classList.add("ouvindo"); setMsg("Estou ouvindo… fale o número 👂"); };
   rec.onresult = e => {
-    respondeu = true;
-    const textos = [...e.results[0]].map(a => a.transcript);
-    falaResposta(textos);
+    if (respondeu || falaRec !== rec) return; // já respondeu (ou o cartão mudou)
+    const textos = [...e.results].flatMap(r => [...r].map(a => a.transcript));
+    const final = [...e.results].some(r => r.isFinal);
+    if (textos.flatMap(numerosNoTexto).includes(n)) { respondeu = true; return falaResposta(textos); }
+    if (final) { respondeu = true; falaResposta(textos); }
   };
   rec.onerror = e => {
     respondeu = true; $("fala-mic").classList.remove("ouvindo");
-    const m = { "no-speech": "Não ouvi nada. Toque no 🎤 e fale mais alto.", "not-allowed": "O microfone não foi liberado. Permita o uso do microfone nas configurações do navegador.",
+    const m = { "no-speech": "Não ouvi nada. Toque no 🎤 e fale de novo — se não der, diga \"número\" antes (\"número um\").", "not-allowed": "O microfone não foi liberado. Permita o uso do microfone nas configurações do navegador.",
       "service-not-allowed": "O microfone não foi liberado. Permita o uso do microfone nas configurações do navegador.", network: "Sem internet: o reconhecimento de fala precisa de internet.",
       "audio-capture": "Não encontrei o microfone do aparelho." }[e.error];
     if (e.error !== "aborted") setMsg(m || "Não consegui ouvir. Tente de novo.", "err");
   };
-  rec.onend = () => { $("fala-mic").classList.remove("ouvindo"); if (!respondeu && falaRec === rec) setMsg("Não ouvi nada. Toque no 🎤 e fale.", "err"); if (falaRec === rec) falaRec = null; };
+  rec.onend = () => { $("fala-mic").classList.remove("ouvindo"); if (!respondeu && falaRec === rec) setMsg("Não ouvi nada. Toque no 🎤 e fale de novo — se não der, diga \"número\" antes (\"número um\").", "err"); if (falaRec === rec) falaRec = null; };
   try { rec.start(); } catch { setMsg("Não consegui ligar o microfone. Tente de novo.", "err"); }
 }
 function falaResposta(textos) {
