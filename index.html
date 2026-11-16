@@ -153,8 +153,26 @@
   #bol-jogo { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; margin: auto 0; }
   .home-sub { position: relative; z-index: 1; margin: 4px 0 -6px; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.1rem, 2.6vw, 1.5rem); color: var(--muted); }
   #home-games { width: min(100%, 1100px); }
-  @media (min-width: 1000px) { #home-games { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-  .c6 { background: #d9822b; } .c7 { background: #2f8f9d; } .c8 { background: #6a8f1f; } .c9 { background: #b5651d; } .c10 { background: #3d7ea6; } .c11 { background: #8a3fa0; }
+  @media (min-width: 1000px) { #home-games { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+  .c6 { background: #d9822b; } .c7 { background: #2f8f9d; } .c8 { background: #6a8f1f; } .c9 { background: #b5651d; } .c10 { background: #3d7ea6; } .c11 { background: #8a3fa0; } .c12 { background: #c0392b; }
+  /* fale o número: cartão grande, microfone e o que o reconhecedor ouviu */
+  .fala-modos { width: min(100%, 900px); margin: auto 0; display: grid; gap: 10px; }
+  .fala-modos h3 { margin: 6px 0 0; font-family: var(--font-display); font-size: 1.2rem; color: var(--muted); }
+  .fala-modos .grupo { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .fala-modos .card { padding: 14px 8px; }
+  .fala-modos .card .glyph { font-size: clamp(1.6rem, 4vw, 2.4rem); }
+  #fala-jogo { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; margin: auto 0; }
+  .fala-cartao { display: flex; align-items: center; justify-content: center; min-height: clamp(160px, 32vh, 300px); transition: border-color 0.2s, background 0.2s; }
+  .fala-cartao span { font-family: var(--font-display); font-weight: 800; font-size: clamp(5rem, 22vw, 12rem); line-height: 1; }
+  .fala-cartao.certo { border-color: var(--ok); background: var(--ok-soft); } .fala-cartao.errado { border-color: var(--err); background: var(--err-soft); }
+  .fala-mic { width: 96px; height: 96px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-size: 2.6rem; box-shadow: 0 6px 0 rgba(0,0,0,0.18); }
+  .fala-mic.ouvindo { background: #c0392b; animation: escuta 1s ease-in-out infinite; }
+  @keyframes escuta { 50% { box-shadow: 0 0 0 14px rgba(192, 57, 43, 0.25); } }
+  .fala-mic:disabled { opacity: 0.5; }
+  .fala-ouvi { margin: 0; min-height: 1.4em; font-weight: 700; color: var(--muted); text-align: center; }
+  .fala-manual { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--muted); }
+  .fala-manual .soft { padding: 4px 10px; font-size: 0.85rem; }
+  .fala-fim-erros { margin: 0 0 14px; font-weight: 700; }
   /* pares e ímpares: números dados e quadradinhos para escrever com a caneta */
   .jogo-board.dois-board { display: flex; flex-direction: column; gap: 14px; width: min(100%, 1000px); }
   .dois-ferramentas { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -335,6 +353,29 @@
     <button class="card c7" id="go-bolinhas"><span class="glyph dots-glyph" aria-hidden="true">●●●●●<br>●●</span><span class="name">Conta as bolinhas</span><span class="sub">quantidade e o 5</span></button>
     <button class="card c8" id="go-fono"><span class="glyph letra">f v</span><span class="name">Sons das letras</span><span class="sub">consciência fonológica</span></button>
     <button class="card c11" id="go-dois"><span class="glyph">2 4 6</span><span class="name">Pares e ímpares</span><span class="sub">contar de 2 em 2</span></button>
+    <button class="card c12" id="go-fala"><span class="glyph">🎤 7</span><span class="name">Fale o número</span><span class="sub">flashcards de leitura</span></button>
+  </div>
+</section>
+<!-- Jogo: flashcards de números — a criança lê o número em voz alta e o reconhecedor de fala do navegador
+     (Chrome no Android, Safari no iPad; o áudio vai para o servidor do Google/Apple) confere -->
+<section id="jogo-fala" class="jogo" hidden>
+  <div id="fala-inicio" class="fala-modos"></div>
+  <div id="fala-jogo" hidden>
+    <div class="bol-topo"><span id="fala-conta"></span><span id="fala-pontos"></span></div>
+    <div class="jogo-board fala-cartao" id="fala-cartao"><span id="fala-numero"></span></div>
+    <button class="fala-mic" id="fala-mic" aria-label="Falar o número">🎤</button>
+    <p class="fala-ouvi" id="fala-ouvi"></p>
+    <div class="fala-manual">
+      <span>Para a professora:</span>
+      <button class="soft" id="fala-certo">✔ Certo</button>
+      <button class="soft" id="fala-errado">✘ Errado</button>
+    </div>
+  </div>
+  <div id="fala-fim" class="jogo-board bol-fim" hidden>
+    <p class="bol-fim-nivel" id="fala-fim-modo"></p>
+    <p class="bol-fim-pontos" id="fala-fim-pontos"></p>
+    <p class="fala-fim-erros" id="fala-fim-erros"></p>
+    <div class="bol-fim-botoes"><button class="soft" id="fala-denovo">Jogar de novo</button><button class="soft" id="fala-trocar">Trocar modo</button></div>
   </div>
 </section>
 <!-- Jogo: pares e ímpares — completar contando de 2 em 2, escrevendo o número com a caneta no quadradinho
@@ -1292,8 +1333,8 @@ function showHome(step = "kinds") {
   clearTimers(); resetTrace(); demo = null; status = "idle";
   if (window.speechSynthesis) speechSynthesis.cancel();
   document.body.classList.remove("em-jogo");
-  for (const id of ["jogo-pares", "jogo-bolinhas", "jogo-fono", "jogo-dois"]) $(id).hidden = true;
-  document.body.classList.remove("missao"); fonoMissao = false; try { fonoAudio && fonoAudio.pause(); } catch {}
+  for (const id of ["jogo-pares", "jogo-bolinhas", "jogo-fono", "jogo-dois", "jogo-fala"]) $(id).hidden = true;
+  document.body.classList.remove("missao"); fonoMissao = false; try { fonoAudio && fonoAudio.pause(); } catch {} falaPara();
   document.body.classList.add("home");
   $("home").hidden = false;
   $("home-kinds").hidden = step !== "kinds";
@@ -1332,7 +1373,7 @@ function abrirJogo(id, titulo) {
   clearTimers(); resetTrace();
   document.body.classList.remove("home"); $("home").hidden = true;
   document.body.classList.add("em-jogo");
-  for (const j of ["jogo-pares", "jogo-bolinhas", "jogo-fono", "jogo-dois"]) $(j).hidden = j !== id;
+  for (const j of ["jogo-pares", "jogo-bolinhas", "jogo-fono", "jogo-dois", "jogo-fala"]) $(j).hidden = j !== id;
   $("title").textContent = titulo; document.title = titulo;
 }
 
@@ -1808,6 +1849,162 @@ const doisInstrucao = () => doisFolha === 0 ? "Preencha cada círculo com o núm
 $("dois-ouvir").onclick = () => falaPt(doisInstrucao());
 $("go-dois").onclick = () => { abrirJogo("jogo-dois", "Pares e ímpares"); doisFerramenta("lapis"); doisAbrir(doisFolha); if (sound) falaPt(doisInstrucao()); };
 
+// ----- Fale o número (flashcards de leitura) -----
+// A criança vê o número e fala em voz alta; o reconhecedor de fala do navegador (Chrome no Android, Safari no
+// iPad — o áudio vai para o servidor do Google/Apple; nada fica guardado no app) devolve o que entendeu e o
+// app confere. Aceita "trinta e dois" ou "32", olhando todas as interpretações que o reconhecedor devolver.
+// Na ordem (até 10, até 30) ou fora de ordem (10 números sorteados, até 10/30/50/100/1000).
+const NUM_PALAVRAS = {
+  zero: 0, um: 1, uma: 1, dois: 2, duas: 2, tres: 3, quatro: 4, cinco: 5, seis: 6, meia: 6, sete: 7, oito: 8, nove: 9,
+  dez: 10, onze: 11, doze: 12, treze: 13, quatorze: 14, catorze: 14, quinze: 15, dezesseis: 16, dezasseis: 16,
+  dezessete: 17, dezassete: 17, dezoito: 18, dezenove: 19, dezanove: 19, vinte: 20, trinta: 30, quarenta: 40,
+  cinquenta: 50, sessenta: 60, setenta: 70, oitenta: 80, noventa: 90, cem: 100, cento: 100, duzentos: 200, duzentas: 200,
+  trezentos: 300, trezentas: 300, quatrocentos: 400, quinhentos: 500, seiscentos: 600, setecentos: 700,
+  oitocentos: 800, novecentos: 900, mil: 1000,
+};
+// todos os números que aparecem num texto: algarismos ("32", "1.000") e por extenso ("cento e vinte e cinco")
+function numerosNoTexto(texto) {
+  const t = texto.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const achados = (t.match(/\d[\d.]*/g) || []).map(s => Number(s.replace(/\./g, "")));
+  let atual = null, ultimo = Infinity;
+  const fecha = () => { if (atual !== null) achados.push(atual); atual = null; ultimo = Infinity; };
+  for (const w of t.split(/[^a-z]+/).filter(Boolean)) {
+    if (w === "e" && atual !== null) continue;
+    const v = NUM_PALAVRAS[w];
+    if (v === undefined) { fecha(); continue; }
+    if (v === 1000) { atual = (atual || 1) * 1000; ultimo = 1000; continue; }
+    // "trinta e dois": a parte seguinte é menor; "dois três" são dois números
+    if (atual !== null && !(v < ultimo && (ultimo >= 100 ? v < 100 : ultimo >= 20 ? v < 10 : false))) fecha();
+    atual = (atual || 0) + v; ultimo = v;
+  }
+  fecha();
+  return achados;
+}
+const FALA_MODOS = [
+  { id: "o10", grupo: "Na ordem", nome: "1 a 10", ordem: true, ate: 10 },
+  { id: "o30", grupo: "Na ordem", nome: "1 a 30", ordem: true, ate: 30 },
+  { id: "a10", grupo: "Fora de ordem", nome: "até 10", ate: 10 },
+  { id: "a30", grupo: "Fora de ordem", nome: "até 30", ate: 30 },
+  { id: "a50", grupo: "Fora de ordem", nome: "até 50", ate: 50 },
+  { id: "a100", grupo: "Fora de ordem", nome: "até 100", ate: 100 },
+  { id: "a1000", grupo: "Fora de ordem", nome: "até 1000", ate: 1000 },
+];
+const FALA_KEY = "jogo-fala-melhor", FALA_SORTEIO = 10;
+const Reconhecedor = window.SpeechRecognition || window.webkitSpeechRecognition;
+let falaMelhor = lerJSON(FALA_KEY, {}), fala = null, falaRec = null;
+function falaTela(qual) { for (const t of ["inicio", "jogo", "fim"]) $("fala-" + t).hidden = t !== qual; }
+function falaInicio() {
+  falaPara();
+  const box = $("fala-inicio"); box.innerHTML = "";
+  for (const grupo of ["Na ordem", "Fora de ordem"]) {
+    const h = document.createElement("h3"); h.textContent = grupo; box.appendChild(h);
+    const g = document.createElement("div"); g.className = "grupo"; box.appendChild(g);
+    FALA_MODOS.filter(m => m.grupo === grupo).forEach((m, i) => {
+      const b = document.createElement("button"); b.className = "card " + ["c1", "c2", "c3", "c4", "c5"][i % 5];
+      b.innerHTML = `<span class="glyph"></span><span class="name"></span><span class="sub"></span>`;
+      b.querySelector(".glyph").textContent = m.ordem ? `1 2 3` : String(m.ate);
+      b.querySelector(".name").textContent = m.nome;
+      const tot = m.ordem ? m.ate : FALA_SORTEIO;
+      b.querySelector(".sub").textContent = falaMelhor[m.id] !== undefined ? `Melhor: ${falaMelhor[m.id]} de ${tot}` : m.ordem ? "na sequência" : "10 números sorteados";
+      b.onclick = () => falaComecar(m);
+      g.appendChild(b);
+    });
+  }
+  falaTela("inicio");
+  setMsg(Reconhecedor ? "Escolha como quer brincar" : "Este navegador não reconhece a fala: use o Chrome (Android) ou o Safari (iPad). A professora pode marcar certo ou errado.", Reconhecedor ? "" : "err");
+}
+// sorteio sem repetir; evita os números da última vez quando há números de sobra
+function falaSorteio(m) {
+  const anteriores = new Set(lerJSON("jogo-fala-ultimos-" + m.id, []));
+  const todos = embaralha([...Array(m.ate).keys()].map(i => i + 1));
+  const novos = todos.filter(n => !anteriores.has(n));
+  const lista = [...novos, ...todos.filter(n => anteriores.has(n))].slice(0, FALA_SORTEIO);
+  gravarJSON("jogo-fala-ultimos-" + m.id, lista);
+  return embaralha(lista);
+}
+function falaComecar(m) {
+  const numeros = m.ordem ? [...Array(m.ate).keys()].map(i => i + 1) : falaSorteio(m);
+  fala = { m, numeros, i: 0, pontos: 0, erros: [], tentativas: 0 };
+  falaTela("jogo"); falaCartao();
+}
+function falaCartao() {
+  falaPara();
+  const n = fala.numeros[fala.i];
+  fala.tentativas = 0;
+  $("fala-numero").textContent = n;
+  $("fala-cartao").className = "jogo-board fala-cartao";
+  $("fala-conta").textContent = `Cartão ${fala.i + 1} de ${fala.numeros.length}`;
+  $("fala-pontos").textContent = `Acertos: ${fala.pontos}`;
+  $("fala-ouvi").textContent = "";
+  $("fala-mic").disabled = !Reconhecedor;
+  setMsg(Reconhecedor ? "Leia o número em voz alta: toque no 🎤 e fale" : "A professora marca certo ou errado");
+}
+function falaPara() { try { falaRec && falaRec.abort(); } catch {} falaRec = null; $("fala-mic").classList.remove("ouvindo"); }
+function falaOuvir() {
+  if (!Reconhecedor || !fala) return;
+  falaPara();
+  const rec = new Reconhecedor();
+  rec.lang = "pt-BR"; rec.interimResults = false; rec.maxAlternatives = 5; rec.continuous = false;
+  falaRec = rec;
+  let respondeu = false;
+  rec.onstart = () => { $("fala-mic").classList.add("ouvindo"); setMsg("Estou ouvindo… fale o número 👂"); };
+  rec.onresult = e => {
+    respondeu = true;
+    const textos = [...e.results[0]].map(a => a.transcript);
+    falaResposta(textos);
+  };
+  rec.onerror = e => {
+    respondeu = true; $("fala-mic").classList.remove("ouvindo");
+    const m = { "no-speech": "Não ouvi nada. Toque no 🎤 e fale mais alto.", "not-allowed": "O microfone não foi liberado. Permita o uso do microfone nas configurações do navegador.",
+      "service-not-allowed": "O microfone não foi liberado. Permita o uso do microfone nas configurações do navegador.", network: "Sem internet: o reconhecimento de fala precisa de internet.",
+      "audio-capture": "Não encontrei o microfone do aparelho." }[e.error];
+    if (e.error !== "aborted") setMsg(m || "Não consegui ouvir. Tente de novo.", "err");
+  };
+  rec.onend = () => { $("fala-mic").classList.remove("ouvindo"); if (!respondeu && falaRec === rec) setMsg("Não ouvi nada. Toque no 🎤 e fale.", "err"); if (falaRec === rec) falaRec = null; };
+  try { rec.start(); } catch { setMsg("Não consegui ligar o microfone. Tente de novo.", "err"); }
+}
+function falaResposta(textos) {
+  const n = fala.numeros[fala.i];
+  const ouvidos = textos.flatMap(numerosNoTexto);
+  $("fala-ouvi").textContent = `Ouvi: "${textos[0]}"`;
+  if (ouvidos.includes(n)) return falaMarca(true);
+  fala.tentativas++;
+  $("fala-cartao").className = "jogo-board fala-cartao errado"; beep("erro");
+  setMsg(fala.tentativas < 2 ? "Ainda não. Olhe bem o número e fale de novo 🎤" : "Vamos ver juntos: toque no 🎤 e tente mais uma vez, ou a professora marca", "err");
+  setTimeout(() => { if (fala && fala.numeros[fala.i] === n) $("fala-cartao").className = "jogo-board fala-cartao"; }, 900);
+}
+// certo: guarda o acerto (de primeira conta ponto) e passa; errado marcado pela professora: anota e passa
+function falaMarca(certo) {
+  if (!fala) return;
+  falaPara();
+  const n = fala.numeros[fala.i];
+  if (certo && fala.tentativas === 0) fala.pontos++;
+  if (!certo || fala.tentativas > 0) fala.erros.push(n);
+  $("fala-cartao").className = "jogo-board fala-cartao " + (certo ? "certo" : "errado");
+  $("fala-pontos").textContent = `Acertos: ${fala.pontos}`;
+  if (certo) { setMsg(`Isso! ${n} ★`, "ok"); beep("ok"); } else { setMsg(`Esse é o ${n}.`, "err"); }
+  if (sound) setTimeout(() => falaPt(String(n)), 200);
+  clearTimers();
+  timer = setTimeout(() => {
+    fala.i++;
+    if (fala.i < fala.numeros.length) return falaCartao();
+    const m = fala.m;
+    falaMelhor[m.id] = Math.max(falaMelhor[m.id] || 0, fala.pontos); gravarJSON(FALA_KEY, falaMelhor);
+    $("fala-fim-modo").textContent = `${m.grupo}: ${m.nome}`;
+    $("fala-fim-pontos").textContent = `${fala.pontos} de ${fala.numeros.length}`;
+    const erros = [...new Set(fala.erros)];
+    $("fala-fim-erros").textContent = erros.length ? `Para treinar: ${erros.join(", ")}` : "Leu todos de primeira!";
+    falaTela("fim"); beep("fim");
+    setMsg(erros.length ? "Muito bem! Vamos treinar os números que ficaram difíceis." : "Parabéns! Leu todos os números de primeira! ★", "ok");
+  }, 1300);
+}
+$("fala-mic").onclick = falaOuvir;
+$("fala-certo").onclick = () => falaMarca(true);
+$("fala-errado").onclick = () => { if (fala) fala.tentativas = Math.max(1, fala.tentativas); falaMarca(false); };
+$("fala-denovo").onclick = () => falaComecar(fala.m);
+$("fala-trocar").onclick = falaInicio;
+$("go-fala").onclick = () => { abrirJogo("jogo-fala", "Fale o número"); falaInicio(); };
+
 // ----- caneta -----
 // no livre a criança não vê a bolinha: um pouco mais de folga para encostar perto do começo
 const tol = () => {
@@ -2037,7 +2234,7 @@ $("novo").onclick = () => {
   }
   clearTimeout(novoTimer); b.classList.remove("warn"); b.textContent = "Novo aluno";
   stars = {}; sheets = {}; save();
-  paresFeitos = new Set(); bolMelhor = {}; fonoFeitos = new Set(); doisFeitos = new Set(); gravarJSON(PARES_KEY, []); gravarJSON(BOL_KEY, {}); gravarJSON(FONO_KEY, []); gravarJSON(DOIS_KEY, []); // jogos também recomeçam
+  paresFeitos = new Set(); bolMelhor = {}; fonoFeitos = new Set(); doisFeitos = new Set(); falaMelhor = {}; gravarJSON(FALA_KEY, {}); gravarJSON(PARES_KEY, []); gravarJSON(BOL_KEY, {}); gravarJSON(FONO_KEY, []); gravarJSON(DOIS_KEY, []); // jogos também recomeçam
   if (!$("jogo-pares").hidden) paresNiveis();
   if (!$("bol-inicio").hidden) bolInicio();
   if (inHome() || document.body.classList.contains("em-jogo")) { b.textContent = "Zerado ✓"; novoTimer = setTimeout(() => { b.textContent = "Novo aluno"; }, 1500); return; }
