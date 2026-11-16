@@ -152,9 +152,21 @@
   body.em-jogo header { order: 0; } body.em-jogo #msg { order: 1; } body.em-jogo .jogo { order: 2; } body.em-jogo .credit { order: 3; }
   #bol-jogo { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; margin: auto 0; }
   .home-sub { position: relative; z-index: 1; margin: 4px 0 -6px; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.1rem, 2.6vw, 1.5rem); color: var(--muted); }
-  #home-games { width: min(100%, 900px); }
-  @media (min-width: 640px) { #home-games { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-  .c6 { background: #d9822b; } .c7 { background: #2f8f9d; } .c8 { background: #6a8f1f; } .c9 { background: #b5651d; } .c10 { background: #3d7ea6; }
+  #home-games { width: min(100%, 1100px); }
+  @media (min-width: 1000px) { #home-games { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .c6 { background: #d9822b; } .c7 { background: #2f8f9d; } .c8 { background: #6a8f1f; } .c9 { background: #b5651d; } .c10 { background: #3d7ea6; } .c11 { background: #8a3fa0; }
+  /* pares e ímpares: números dados e quadradinhos para escrever com a caneta */
+  .dois-board { display: flex; flex-direction: column; gap: 14px; width: min(100%, 1000px); }
+  .dois-ferramentas { display: flex; gap: 8px; flex-wrap: wrap; }
+  .dois-ferramentas .sel { border-color: var(--accent); background: var(--info-soft); color: var(--accent); }
+  .dois-linha { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding: 6px 0; }
+  .dois-linha + .dois-linha { border-top: 2px dashed var(--line); padding-top: 14px; }
+  .dois-num { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.6rem, 4vw, 2.2rem); min-width: 2.2ch; text-align: center; }
+  .dois-caixa { width: clamp(84px, 14vw, 120px); height: clamp(64px, 10vw, 86px); border: 2px solid var(--line); border-radius: 14px; background: var(--sheet);
+    touch-action: none; display: block; background-image: linear-gradient(transparent calc(100% - 14px), var(--band) calc(100% - 14px), var(--band) calc(100% - 12px), transparent calc(100% - 12px)); }
+  .dois-caixa.atual { border-color: var(--accent); }
+  .dois-caixa.certa { border-color: var(--ok); background-color: var(--ok-soft); }
+  .dois-caixa.errada { border-color: var(--err); background-color: var(--err-soft); animation: treme 0.35s; }
   /* sons das letras */
   body.missao nav, body.missao #prev, body.missao #next, body.missao .tabs { display: none !important; }
   .niveis button.par-sons { font-family: "Comic Neue", "Comic Sans MS", cursive; font-weight: 700; letter-spacing: 0.1em; white-space: nowrap; padding: 4px 12px; }
@@ -179,7 +191,7 @@
   .card .glyph.dots-glyph { font-size: clamp(1rem, 2.6vw, 1.5rem); line-height: 1.1; letter-spacing: 0.08em; padding: 0.35em 0.5em; }
   .jogo { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 4px 0; }
   .jogo-board { width: min(100%, 720px); background: var(--sheet); border: 2px solid var(--line); border-radius: 24px; padding: 16px; }
-  .niveis { display: flex; gap: 6px; overflow-x: auto; max-width: 100%; padding: 8px 4px 4px; scrollbar-width: none; }
+  .niveis { display: flex; flex: none; gap: 6px; overflow-x: auto; max-width: 100%; padding: 8px 4px 4px; scrollbar-width: none; }
   .niveis button { position: relative; flex: none; min-width: 2.8rem; padding: 4px 8px; font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; background: var(--sheet); border: 2px solid var(--line); }
   .niveis button[aria-current="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
   .niveis button.feito::after { content: "✓"; position: absolute; top: -8px; right: -6px; background: var(--ok); color: #fff; border-radius: 999px; font-size: 0.7rem; padding: 1px 5px; }
@@ -315,6 +327,21 @@
     <button class="card c6" id="go-pares"><span class="glyph">3+8</span><span class="name">Encontre os pares</span><span class="sub">somas para a subtração</span></button>
     <button class="card c7" id="go-bolinhas"><span class="glyph dots-glyph" aria-hidden="true">●●●●●<br>●●</span><span class="name">Conta as bolinhas</span><span class="sub">quantidade e o 5</span></button>
     <button class="card c8" id="go-fono"><span class="glyph letra">f v</span><span class="name">Sons das letras</span><span class="sub">consciência fonológica</span></button>
+    <button class="card c11" id="go-dois"><span class="glyph">2 4 6</span><span class="name">Pares e ímpares</span><span class="sub">contar de 2 em 2</span></button>
+  </div>
+</section>
+<!-- Jogo: pares e ímpares — completar contando de 2 em 2, escrevendo o número com a caneta no quadradinho
+     (o app reconhece o número escrito e confere na hora). 5 folhas, como as da unidade. -->
+<section id="jogo-dois" class="jogo" hidden>
+  <div class="niveis" id="dois-folhas" aria-label="Folha"></div>
+  <div class="jogo-board dois-board">
+    <div class="dois-ferramentas">
+      <button class="soft sel" id="dois-lapis" aria-pressed="true">✏️ Lápis</button>
+      <button class="soft" id="dois-borracha" aria-pressed="false">⌫ Borracha</button>
+      <button class="soft" id="dois-desfazer">↶ Desfazer</button>
+      <button class="soft" id="dois-ouvir" aria-label="Ouvir a instrução">🔊</button>
+    </div>
+    <div id="dois-linhas"></div>
   </div>
 </section>
 <!-- Jogo: consciência fonológica — ouvir o som da letra (fonema), traçar a letra e achar as figuras
@@ -1258,7 +1285,7 @@ function showHome(step = "kinds") {
   clearTimers(); resetTrace(); demo = null; status = "idle";
   if (window.speechSynthesis) speechSynthesis.cancel();
   document.body.classList.remove("em-jogo");
-  for (const id of ["jogo-pares", "jogo-bolinhas", "jogo-fono"]) $(id).hidden = true;
+  for (const id of ["jogo-pares", "jogo-bolinhas", "jogo-fono", "jogo-dois"]) $(id).hidden = true;
   document.body.classList.remove("missao"); fonoMissao = false; try { fonoAudio && fonoAudio.pause(); } catch {}
   document.body.classList.add("home");
   $("home").hidden = false;
@@ -1298,7 +1325,7 @@ function abrirJogo(id, titulo) {
   clearTimers(); resetTrace();
   document.body.classList.remove("home"); $("home").hidden = true;
   document.body.classList.add("em-jogo");
-  for (const j of ["jogo-pares", "jogo-bolinhas", "jogo-fono"]) $(j).hidden = j !== id;
+  for (const j of ["jogo-pares", "jogo-bolinhas", "jogo-fono", "jogo-dois"]) $(j).hidden = j !== id;
   $("title").textContent = titulo; document.title = titulo;
 }
 
@@ -1567,6 +1594,203 @@ function fonoToque(bt, palavra, certa, letraDela) {
 }
 $("go-fono").onclick = () => { abrirJogo("jogo-fono", "Sons das letras"); fonoDestaque(); };
 
+// ----- reconhecimento de números escritos à mão -----
+// Reconhecedor de nuvem de pontos ($P, Vatavu, Anthony e Wobbrock, 2012): ordem e sentido dos traços não
+// importam (a criança pode fazer o 4 ou o 5 do jeito dela). Os modelos de cada algarismo saem dos números do
+// traçado (PATHS) e de variações comuns na escrita das crianças (1 sem e com pezinho, 4 aberto, 7 cortado…).
+const RP_N = 32;
+const ALGARISMOS_MODELO = {
+  0: ["M50 15 C25 15, 18 45, 18 70 C18 100, 28 125, 50 125 C72 125, 82 100, 82 70 C82 42, 75 15, 52 15"],
+  1: ["M50 15 L50 125"],
+  2: [PATHS[1][2][0], "M20 40 C25 10, 78 10, 78 40 C78 70, 30 95, 20 125 L82 125"],
+  3: [PATHS[2][2][0], "M22 25 L78 25 L45 62 C70 62, 82 80, 80 100 C78 130, 30 132, 20 112"],
+  4: [PATHS[3][2], ["M60 15 L18 90 L84 90", "M60 15 L60 128"], ["M28 15 L22 80 L82 80", "M66 40 L66 128"]],
+  5: [PATHS[4][2], "M80 18 L28 18 L24 68 C40 55, 82 58, 80 95 C78 132, 30 132, 20 112"],
+  6: [PATHS[5][2][0], "M70 15 C40 40, 24 70, 26 98 C28 128, 76 128, 76 100 C76 76, 40 76, 28 96"],
+  7: [PATHS[6][2][0], ["M18 20 L82 20 L42 125", "M32 72 L70 72"], "M18 20 L82 20 L60 70 L50 125"],
+  8: [PATHS[7][2][0], ["M50 15 C28 15, 28 65, 50 65 C72 65, 72 15, 50 15", "M50 65 C22 65, 22 125, 50 125 C78 125, 78 65, 50 65"]],
+  9: [PATHS[8][2][0], "M74 40 C72 12, 26 12, 26 42 C26 70, 74 72, 74 42 C74 80, 70 110, 50 125", ["M74 40 C72 12, 26 12, 26 42 C26 70, 74 72, 74 42", "M74 30 L74 125"]],
+};
+ALGARISMOS_MODELO[1].push(["M34 38 L50 15 L50 125"], ["M34 38 L50 15 L50 125", "M30 125 L70 125"]);
+function rpNuvem(tracos) {
+  // tracos: [[{x,y}…]…] → 32 pontos espalhados por igual pelo desenho, centrados e na mesma escala
+  const pts = tracos.flatMap((t, id) => t.map(p => ({ x: p.x, y: p.y, id })));
+  let total = 0;
+  for (let i = 1; i < pts.length; i++) if (pts[i].id === pts[i - 1].id) total += dist(pts[i - 1], pts[i]);
+  const I = total / (RP_N - 1) || 1, out = [pts[0]]; let D = 0;
+  for (let i = 1; i < pts.length; i++) {
+    if (pts[i].id !== pts[i - 1].id) continue;
+    let a = pts[i - 1]; const b = pts[i]; let d = dist(a, b);
+    while (D + d >= I && out.length < RP_N) {
+      const t = (I - D) / d, q = { x: a.x + t * (b.x - a.x), y: a.y + t * (b.y - a.y), id: b.id };
+      out.push(q); a = q; d = dist(a, b); D = 0;
+    }
+    D += d;
+  }
+  while (out.length < RP_N) out.push(pts[pts.length - 1]);
+  const xs = out.map(p => p.x), ys = out.map(p => p.y);
+  const s = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) || 1;
+  const cx = xs.reduce((a, b) => a + b, 0) / RP_N, cy = ys.reduce((a, b) => a + b, 0) / RP_N;
+  return out.map(p => ({ x: (p.x - cx) / s, y: (p.y - cy) / s }));
+}
+function rpDistancia(A, B) {
+  const passo = Math.floor(Math.pow(RP_N, 0.5));
+  const nuvem = (P, Q, ini) => {
+    const usado = new Array(RP_N).fill(false); let soma = 0, i = ini;
+    do {
+      let min = Infinity, idx = -1;
+      for (let j = 0; j < RP_N; j++) if (!usado[j]) { const d = dist(P[i], Q[j]); if (d < min) { min = d; idx = j; } }
+      usado[idx] = true;
+      soma += (1 - ((i - ini + RP_N) % RP_N) / RP_N) * min;
+      i = (i + 1) % RP_N;
+    } while (i !== ini);
+    return soma;
+  };
+  let menor = Infinity;
+  for (let i = 0; i < RP_N; i += passo) menor = Math.min(menor, nuvem(A, B, i), nuvem(B, A, i));
+  return menor;
+}
+const RP_MODELOS = Object.entries(ALGARISMOS_MODELO).flatMap(([dig, lista]) =>
+  lista.map(m => ({ dig: Number(dig), nuvem: rpNuvem((Array.isArray(m) ? m : [m]).map(d => buildStroke(d).pts)) })));
+// distância do desenho a cada algarismo (o menor entre os modelos dele)
+function rpAlgarismos(tracos) {
+  const nuvem = rpNuvem(tracos), dists = Array(10).fill(Infinity);
+  for (const m of RP_MODELOS) dists[m.dig] = Math.min(dists[m.dig], rpDistancia(nuvem, m.nuvem));
+  return dists;
+}
+// separa os algarismos de um número de dois dígitos: traços que se sobrepõem na horizontal são do mesmo
+function separarAlgarismos(tracos) {
+  const caixas = tracos.map(t => ({ t, x0: Math.min(...t.map(p => p.x)), x1: Math.max(...t.map(p => p.x)) })).sort((a, b) => a.x0 - b.x0);
+  const grupos = [];
+  for (const c of caixas) {
+    const g = grupos[grupos.length - 1];
+    const sobrepoe = g && c.x0 < g.x1 - Math.min(g.x1 - g.x0, c.x1 - c.x0) * 0.25 + 4;
+    if (sobrepoe) { g.t.push(c.t); g.x1 = Math.max(g.x1, c.x1); } else grupos.push({ t: [c.t], x0: c.x0, x1: c.x1 });
+  }
+  return grupos.map(g => g.t);
+}
+// O app sabe o número esperado: aceita se cada algarismo escrito estiver entre os mais parecidos com o
+// esperado (folga de 25% sobre o melhor), o que evita recusar um número certo escrito de um jeito diferente.
+const RP_FOLGA = 1.25;
+function confereNumero(tracos, esperado) {
+  const grupos = separarAlgarismos(tracos), digs = String(esperado).split("").map(Number);
+  if (grupos.length !== digs.length) return false;
+  return grupos.every((g, i) => { const d = rpAlgarismos(g), melhor = Math.min(...d); return d[digs[i]] <= melhor * RP_FOLGA; });
+}
+
+// ----- Pares e ímpares (contar de 2 em 2) -----
+// 5 folhas como as da unidade, cada uma com uma linha de ímpares (1 a 21) e uma de pares (2 a 22); o que muda
+// é quais números faltam. A criança escreve com a caneta no quadradinho; quando para de escrever, o app
+// reconhece o número e confere na hora (certo fica verde; errado avisa e apaga para escrever de novo).
+const DOIS_FOLHAS = [
+  { comeca: [1, 2], falta: i => i % 3 === 2 },          // 1 3 _ 7 9 _ 13…
+  { comeca: [2, 1], falta: i => i % 2 === 1 },          // 2 _ 6 _ 10…
+  { comeca: [1, 2], falta: i => i % 3 !== 0 },          // 1 _ _ 7 _ _ 13…
+  { comeca: [2, 1], falta: i => i !== 0 && i !== 5 },   // 2 _ _ _ _ 12 _ _ _ _ _
+  { comeca: [1, 2], falta: i => i !== 0 },              // só o primeiro
+];
+const DOIS_KEY = "jogo-dois-feitos", DOIS_ESPERA = 1000;
+let doisFeitos = new Set(lerJSON(DOIS_KEY, [])), doisFolha = 0, doisModo = "lapis", doisCaixas = [], doisUltima = null;
+function doisBotoes() {
+  const box = $("dois-folhas"); box.innerHTML = "";
+  DOIS_FOLHAS.forEach((f, i) => {
+    const b = document.createElement("button"); b.textContent = `Folha ${i + 1}`;
+    b.setAttribute("aria-current", String(i === doisFolha)); b.classList.toggle("feito", doisFeitos.has(i));
+    b.onclick = () => doisAbrir(i);
+    box.appendChild(b);
+  });
+}
+function doisAbrir(i) {
+  clearTimers(); doisFolha = i; doisCaixas = []; doisUltima = null;
+  const box = $("dois-linhas"); box.innerHTML = "";
+  for (const inicio of DOIS_FOLHAS[i].comeca) {
+    const linha = document.createElement("div"); linha.className = "dois-linha";
+    for (let k = 0; k < 11; k++) {
+      const n = inicio + 2 * k;
+      if (!DOIS_FOLHAS[i].falta(k)) { const s = document.createElement("span"); s.className = "dois-num"; s.textContent = n; linha.appendChild(s); continue; }
+      const c = document.createElement("canvas"); c.className = "dois-caixa"; c.setAttribute("aria-label", "Escreva o número");
+      linha.appendChild(c);
+      doisCaixas.push(doisCaixa(c, n));
+    }
+    box.appendChild(linha);
+  }
+  doisBotoes(); doisMarcaAtual();
+  setMsg("Complete contando de 2 em 2. Escreva o número no quadradinho ✏️");
+}
+function doisCaixa(c, esperado) {
+  const cx = { c, esperado, tracos: [], ok: false, timer: null, ativo: null };
+  const pt = e => { const r = c.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  c.addEventListener("pointerdown", e => {
+    if (e.pointerType === "pen") penSeen = true;
+    if ((e.pointerType === "touch" && penSeen) || cx.ok) return; // palma da mão; caixa já certa
+    if (doisModo === "borracha") { cx.tracos = []; c.classList.remove("errada"); doisDesenha(cx); return; }
+    clearTimeout(cx.timer); c.classList.remove("errada");
+    try { c.setPointerCapture(e.pointerId); } catch {}
+    cx.ativo = e.pointerId; cx.tracos.push([pt(e)]); doisUltima = cx; doisMarcaAtual(cx); doisDesenha(cx);
+  });
+  c.addEventListener("pointermove", e => {
+    if (cx.ativo !== e.pointerId) return;
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+    for (const ev of evs.length ? evs : [e]) cx.tracos[cx.tracos.length - 1].push(pt(ev));
+    doisDesenha(cx);
+  });
+  const solta = e => {
+    if (cx.ativo !== e.pointerId) return;
+    cx.ativo = null;
+    // espera um pouco: a criança pode estar escrevendo o segundo algarismo
+    cx.timer = setTimeout(() => doisConfere(cx), DOIS_ESPERA + (String(esperado).length > 1 ? 400 : 0));
+  };
+  c.addEventListener("pointerup", solta); c.addEventListener("pointercancel", solta);
+  requestAnimationFrame(() => doisDesenha(cx));
+  return cx;
+}
+function doisDesenha(cx) {
+  const c = cx.c, r = c.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  if (c.width !== Math.round(r.width * dpr)) { c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr); }
+  const g = c.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, r.width, r.height);
+  g.lineWidth = 4; g.lineCap = g.lineJoin = "round";
+  g.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue(cx.ok ? "--ok" : c.classList.contains("errada") ? "--err" : "--accent").trim();
+  for (const t of cx.tracos) {
+    g.beginPath(); t.forEach((p, k) => k ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y));
+    if (t.length === 1) g.lineTo(t[0].x + 0.1, t[0].y);
+    g.stroke();
+  }
+}
+function doisMarcaAtual(cx) {
+  const atual = cx || doisCaixas.find(x => !x.ok);
+  doisCaixas.forEach(x => x.c.classList.toggle("atual", x === atual && !x.ok));
+}
+function doisConfere(cx) {
+  if (!cx.tracos.length || cx.ok || cx.ativo !== null) return;
+  if (confereNumero(cx.tracos, cx.esperado)) {
+    cx.ok = true; cx.c.classList.add("certa"); doisDesenha(cx); beep("ok");
+    const faltam = doisCaixas.filter(x => !x.ok).length;
+    if (sound) setTimeout(() => falaPt(String(cx.esperado)), 150);
+    if (faltam) { setMsg(`Isso! ${cx.esperado} ★ Faltam ${faltam}.`, "ok"); doisMarcaAtual(); return; }
+    doisFeitos.add(doisFolha); gravarJSON(DOIS_KEY, [...doisFeitos]); doisBotoes(); beep("fim");
+    setMsg(`Parabéns! Você terminou a folha ${doisFolha + 1}! ★`, "ok");
+    if (doisFolha < DOIS_FOLHAS.length - 1) timer = setTimeout(() => doisAbrir(doisFolha + 1), 2600);
+    return;
+  }
+  cx.c.classList.add("errada"); doisDesenha(cx); beep("erro");
+  setMsg("Não é esse número. Conte de 2 em 2 e escreva de novo!", "err");
+  cx.timer = setTimeout(() => { cx.tracos = []; cx.c.classList.remove("errada"); doisDesenha(cx); }, 1300);
+}
+function doisFerramenta(m) {
+  doisModo = m;
+  $("dois-lapis").classList.toggle("sel", m === "lapis"); $("dois-lapis").setAttribute("aria-pressed", String(m === "lapis"));
+  $("dois-borracha").classList.toggle("sel", m === "borracha"); $("dois-borracha").setAttribute("aria-pressed", String(m === "borracha"));
+}
+$("dois-lapis").onclick = () => doisFerramenta("lapis");
+$("dois-borracha").onclick = () => doisFerramenta("borracha");
+$("dois-desfazer").onclick = () => {
+  const cx = doisUltima; if (!cx || cx.ok || !cx.tracos.length) return;
+  clearTimeout(cx.timer); cx.tracos.pop(); cx.c.classList.remove("errada"); doisDesenha(cx);
+  if (cx.tracos.length) cx.timer = setTimeout(() => doisConfere(cx), DOIS_ESPERA);
+};
+$("dois-ouvir").onclick = () => falaPt("Complete contando de 2 em 2.");
+$("go-dois").onclick = () => { abrirJogo("jogo-dois", "Pares e ímpares"); doisFerramenta("lapis"); doisAbrir(doisFolha); if (sound) falaPt("Complete contando de 2 em 2."); };
+
 // ----- caneta -----
 // no livre a criança não vê a bolinha: um pouco mais de folga para encostar perto do começo
 const tol = () => {
@@ -1796,7 +2020,7 @@ $("novo").onclick = () => {
   }
   clearTimeout(novoTimer); b.classList.remove("warn"); b.textContent = "Novo aluno";
   stars = {}; sheets = {}; save();
-  paresFeitos = new Set(); bolMelhor = {}; fonoFeitos = new Set(); gravarJSON(PARES_KEY, []); gravarJSON(BOL_KEY, {}); gravarJSON(FONO_KEY, []); // jogos também recomeçam
+  paresFeitos = new Set(); bolMelhor = {}; fonoFeitos = new Set(); doisFeitos = new Set(); gravarJSON(PARES_KEY, []); gravarJSON(BOL_KEY, {}); gravarJSON(FONO_KEY, []); gravarJSON(DOIS_KEY, []); // jogos também recomeçam
   if (!$("jogo-pares").hidden) paresNiveis();
   if (!$("bol-inicio").hidden) bolInicio();
   if (inHome() || document.body.classList.contains("em-jogo")) { b.textContent = "Zerado ✓"; novoTimer = setTimeout(() => { b.textContent = "Novo aluno"; }, 1500); return; }
