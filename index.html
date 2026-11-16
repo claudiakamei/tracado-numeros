@@ -177,6 +177,7 @@
   .jogo-board.dois-board { display: flex; flex-direction: column; gap: 14px; width: min(100%, 1000px); }
   .dois-ferramentas { display: flex; gap: 8px; flex-wrap: wrap; }
   .dois-ferramentas .sel { border-color: var(--accent); background: var(--info-soft); color: var(--accent); }
+  .dois-ferramentas .dois-prof { margin-left: auto; font-size: 0.8rem; color: var(--muted); }
   .dois-linha { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding: 6px 0; }
   .dois-linha + .dois-linha { border-top: 2px dashed var(--line); padding-top: 14px; }
   .dois-num { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.6rem, 4vw, 2.2rem); min-width: 2.2ch; text-align: center; }
@@ -388,6 +389,7 @@
       <button class="soft" id="dois-borracha" aria-pressed="false">⌫ Borracha</button>
       <button class="soft" id="dois-desfazer">↶ Desfazer</button>
       <button class="soft" id="dois-ouvir" aria-label="Ouvir a instrução">🔊</button>
+      <button class="soft dois-prof" id="dois-certo" title="Para a professora: aceita o último quadradinho quando o app não reconhecer um número certo">✔ Está certo</button>
     </div>
     <div id="dois-linhas"></div>
   </div>
@@ -1720,11 +1722,34 @@ function separarAlgarismos(tracos) {
 // O app sabe o número esperado: aceita se cada algarismo escrito estiver entre os mais parecidos com o
 // esperado (folga de 25% sobre o melhor), o que evita recusar um número certo escrito de um jeito diferente.
 const RP_FOLGA = 1.25;
-function confereNumero(tracos, esperado) {
-  const grupos = separarAlgarismos(tracos), digs = String(esperado).split("").map(Number);
-  if (grupos.length !== digs.length) return false;
-  return grupos.every((g, i) => { const d = rpAlgarismos(g), melhor = Math.min(...d); return d[digs[i]] <= melhor * RP_FOLGA; });
+const grupoConfere = (g, dig) => { const d = rpAlgarismos(g), melhor = Math.min(...d); return d[dig] <= melhor * RP_FOLGA; };
+// Jeitos de dividir os traços (da esquerda para a direita) em tantos algarismos quanto o número esperado tem —
+// para quando a criança encosta um algarismo no outro (o 1 inclinado tocando o 2) ou faz um algarismo em
+// pedaços afastados (os dois traços do 4 ou do 5). Não junta traços com um vão grande entre eles.
+function divisoes(tracos, quantos) {
+  const tr = tracos.map(t => ({ t, x0: Math.min(...t.map(p => p.x)), x1: Math.max(...t.map(p => p.x)), cx: t.reduce((s, p) => s + p.x, 0) / t.length }))
+    .sort((a, b) => a.cx - b.cx);
+  const ys = tracos.flat().map(p => p.y), H = Math.max(...ys) - Math.min(...ys) || 1;
+  if (tr.length < quantos || tr.length > 9) return [];
+  // um algarismo não fica mais largo que a altura do número (senão eram dois algarismos inteiros)
+  const juntaveis = grupo => { const s = [...grupo].sort((a, b) => a.x0 - b.x0); let fim = s[0].x1;
+    for (const c of s.slice(1)) { if (c.x0 - fim > H * 0.35) return false; fim = Math.max(fim, c.x1); }
+    return grupo.length === 1 || fim - s[0].x0 <= H; };
+  const saida = [];
+  const corta = (ini, resta, atual) => {
+    if (resta === 1) { const g = tr.slice(ini); if (juntaveis(g)) saida.push([...atual, g.map(c => c.t)]); return; }
+    for (let k = ini + 1; k <= tr.length - resta + 1; k++) { const g = tr.slice(ini, k); if (juntaveis(g)) corta(k, resta - 1, [...atual, g.map(c => c.t)]); }
+  };
+  corta(0, quantos, []);
+  return saida;
 }
+function confereNumero(tracos, esperado) {
+  const digs = String(esperado).split("").map(Number), natural = separarAlgarismos(tracos);
+  if (natural.length === digs.length && natural.every((g, i) => grupoConfere(g, digs[i]))) return true;
+  return divisoes(tracos, digs.length).some(div => div.every((g, i) => grupoConfere(g, digs[i])));
+}
+// o que o app leu (para mostrar quando não confere: ajuda a ver se a criança errou ou se o app leu errado)
+const numeroLido = tracos => separarAlgarismos(tracos).map(g => { const d = rpAlgarismos(g); return d.indexOf(Math.min(...d)); }).join("");
 
 // ----- Pares e ímpares (contar de 2 em 2) -----
 // Folha 1: os números de 1 a 20 em sequência, em círculos (ímpares rosa, pares azuis, como a folha 3A da
@@ -1744,7 +1769,8 @@ const DOIS_FOLHAS = [
   [linhaDeDois(2, i => i !== 0 && i !== 5), linhaDeDois(1, i => i !== 0 && i !== 5)],    // 2 _ _ _ _ 12 _ _ _ _ _
   [linhaDeDois(1, i => i !== 0), linhaDeDois(2, i => i !== 0)],                          // só o primeiro
 ];
-const DOIS_KEY = "jogo-dois-feitos-v2", DOIS_ESPERA = 1000; // v2: a folha nova virou a 1ª (as marcas antigas não batem)
+// v2: a folha nova virou a 1ª (as marcas antigas não batem); espera depois da caneta sair: a criança para entre os traços
+const DOIS_KEY = "jogo-dois-feitos-v2", DOIS_ESPERA = 1600;
 let doisFeitos = new Set(lerJSON(DOIS_KEY, [])), doisFolha = 0, doisModo = "lapis", doisCaixas = [], doisUltima = null;
 function doisBotoes() {
   const box = $("dois-folhas"); box.innerHTML = "";
@@ -1781,7 +1807,7 @@ function doisCaixa(c, esperado) {
     if (e.pointerType === "pen") penSeen = true;
     if ((e.pointerType === "touch" && penSeen) || cx.ok) return; // palma da mão; caixa já certa
     if (doisModo === "borracha") { cx.tracos = []; c.classList.remove("errada"); doisDesenha(cx); return; }
-    clearTimeout(cx.timer); c.classList.remove("errada");
+    clearTimeout(cx.timer); c.classList.remove("errada"); cx.esperouMais = false;
     try { c.setPointerCapture(e.pointerId); } catch {}
     cx.ativo = e.pointerId; cx.tracos.push([pt(e)]); doisUltima = cx; doisMarcaAtual(cx); doisDesenha(cx);
   });
@@ -1795,7 +1821,7 @@ function doisCaixa(c, esperado) {
     if (cx.ativo !== e.pointerId) return;
     cx.ativo = null;
     // espera um pouco: a criança pode estar escrevendo o segundo algarismo
-    cx.timer = setTimeout(() => doisConfere(cx), DOIS_ESPERA + (String(esperado).length > 1 ? 400 : 0));
+    cx.timer = setTimeout(() => doisConfere(cx), DOIS_ESPERA + (String(esperado).length > 1 ? 600 : 0));
   };
   c.addEventListener("pointerup", solta); c.addEventListener("pointercancel", solta);
   requestAnimationFrame(() => doisDesenha(cx));
@@ -1817,9 +1843,16 @@ function doisMarcaAtual(cx) {
   const atual = cx || doisCaixas.find(x => !x.ok);
   doisCaixas.forEach(x => x.c.classList.toggle("atual", x === atual && !x.ok));
 }
-function doisConfere(cx) {
-  if (!cx.tracos.length || cx.ok || cx.ativo !== null) return;
-  if (confereNumero(cx.tracos, cx.esperado)) {
+// professora = a professora viu que está certo e o app não reconheceu (botão "✔ Está certo")
+function doisConfere(cx, professora = false) {
+  if (cx.ok || cx.ativo !== null || (!cx.tracos.length && !professora)) return;
+  clearTimeout(cx.timer);
+  const certo = professora || confereNumero(cx.tracos, cx.esperado);
+  // na primeira vez que não confere, espera mais um pouco: pode faltar um traço (o do 4, o do 5) ou o 2º algarismo
+  if (!certo && !cx.esperouMais) {
+    cx.esperouMais = true; cx.timer = setTimeout(() => doisConfere(cx), 1500); return;
+  }
+  if (certo) {
     cx.ok = true; cx.c.classList.add("certa"); doisDesenha(cx); beep("ok");
     const faltam = doisCaixas.filter(x => !x.ok).length;
     if (sound) setTimeout(() => falaPt(String(cx.esperado)), 150);
@@ -1830,8 +1863,8 @@ function doisConfere(cx) {
     return;
   }
   cx.c.classList.add("errada"); doisDesenha(cx); beep("erro");
-  setMsg("Não é esse número. Conte de 2 em 2 e escreva de novo!", "err");
-  cx.timer = setTimeout(() => { cx.tracos = []; cx.c.classList.remove("errada"); doisDesenha(cx); }, 1300);
+  setMsg(`Entendi ${numeroLido(cx.tracos)}. Não é esse número: conte de 2 em 2 e escreva de novo!`, "err");
+  cx.timer = setTimeout(() => { cx.tracos = []; cx.esperouMais = false; cx.c.classList.remove("errada"); doisDesenha(cx); }, 2000);
 }
 function doisFerramenta(m) {
   doisModo = m;
@@ -1840,6 +1873,10 @@ function doisFerramenta(m) {
 }
 $("dois-lapis").onclick = () => doisFerramenta("lapis");
 $("dois-borracha").onclick = () => doisFerramenta("borracha");
+$("dois-certo").onclick = () => {
+  const cx = doisUltima && !doisUltima.ok ? doisUltima : doisCaixas.find(x => !x.ok);
+  if (cx) { cx.c.classList.remove("errada"); doisConfere(cx, true); }
+};
 $("dois-desfazer").onclick = () => {
   const cx = doisUltima; if (!cx || cx.ok || !cx.tracos.length) return;
   clearTimeout(cx.timer); cx.tracos.pop(); cx.c.classList.remove("errada"); doisDesenha(cx);
