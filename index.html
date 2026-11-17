@@ -154,7 +154,7 @@
   .home-sub { position: relative; z-index: 1; margin: 4px 0 -6px; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.1rem, 2.6vw, 1.5rem); color: var(--muted); }
   #home-games { width: min(100%, 1100px); }
   @media (min-width: 1000px) { #home-games { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
-  .c6 { background: #d9822b; } .c7 { background: #2f8f9d; } .c8 { background: #6a8f1f; } .c9 { background: #b5651d; } .c10 { background: #3d7ea6; } .c11 { background: #8a3fa0; } .c12 { background: #c0392b; } .c13 { background: #1f7a5a; }
+  .c6 { background: #d9822b; } .c7 { background: #2f8f9d; } .c8 { background: #6a8f1f; } .c9 { background: #b5651d; } .c10 { background: #3d7ea6; } .c11 { background: #8a3fa0; } .c12 { background: #c0392b; } .c13 { background: #1f7a5a; } .c14 { background: #5b4fb3; }
   /* fale o número: cartão grande, microfone e o que o reconhecedor ouviu */
   .fala-modos { width: min(100%, 900px); margin: auto 0; display: grid; gap: 10px; }
   .fala-modos h3 { margin: 6px 0 0; font-family: var(--font-display); font-size: 1.2rem; color: var(--muted); }
@@ -260,6 +260,23 @@
   .lei-cartoes button.certo { border-color: var(--ok); background: var(--ok-soft); color: var(--ok); pointer-events: none; }
   .lei-cartoes button.treme { animation: treme 0.35s; border-color: var(--err); background: var(--err-soft); }
   .lei-placar { margin-top: 14px; text-align: center; font-weight: 800; color: var(--muted); }
+  /* Jogo da memória: figura + palavra; a figura some e fica só a palavra */
+  .mem-topo { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; font-weight: 800; color: var(--muted); }
+  .mem-tempo { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 0 auto 14px; max-width: 420px; }
+  .mem-tempo i { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left; }
+  .mem-cartoes { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; }
+  .mem-cartoes button { flex: 0 1 calc(33.33% - 10px); min-width: 140px; max-width: 220px; padding: 10px 6px 8px; border: 3px solid var(--line); border-radius: 18px; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--ink); }
+  .mem-cartoes .fig { width: clamp(64px, 14vw, 110px); aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 14px; }
+  .mem-cartoes .fig img { width: 100%; height: 100%; }
+  .mem-cartoes .fig b { display: none; font-family: var(--font-display); font-size: 2.6rem; color: var(--muted); }
+  .mem-cartoes button.escondida .fig { background: var(--line); }
+  .mem-cartoes button.escondida .fig img { display: none; } .mem-cartoes button.escondida .fig b { display: block; }
+  .mem-cartoes .pal { font-family: "Comic Neue", "Comic Sans MS", cursive; font-weight: 700; font-size: clamp(1.15rem, 3.2vw, 1.8rem); letter-spacing: 0.04em; white-space: nowrap; }
+  .mem-cartoes button.certo { border-color: var(--ok); background: var(--ok-soft); color: var(--ok); pointer-events: none; }
+  .mem-cartoes button.treme { animation: treme 0.35s; border-color: var(--err); background: var(--err-soft); }
+  .mem-cartoes.memorizando button { pointer-events: none; }
+  @media (max-width: 640px) { .mem-cartoes { gap: 8px; } .mem-cartoes button { flex-basis: calc(50% - 4px); min-width: 0; } }
   @media (max-width: 640px) { .lei-cartoes { gap: 10px; } .lei-cartoes button { flex-basis: 100%; min-width: 0; min-height: 72px; font-size: 1.9rem; } }
   .bol-fim-nivel { margin: 0; font-weight: 800; color: var(--muted); }
   .bol-fim-pontos { margin: 6px 0 16px; font-family: var(--font-display); font-weight: 800; font-size: 3rem; }
@@ -366,6 +383,7 @@
     <button class="card c11" id="go-dois"><span class="glyph">2 4 6</span><span class="name">Pares e ímpares</span><span class="sub">contar de 2 em 2</span></button>
     <button class="card c12" id="go-fala"><span class="glyph">🎤 7</span><span class="name">Fale o número</span><span class="sub">flashcards de leitura</span></button>
     <button class="card c13" id="go-leitura"><span class="glyph letra">GATO</span><span class="name">Leitura de palavras</span><span class="sub">ouça e toque na palavra</span></button>
+    <button class="card c14" id="go-memoria"><span class="glyph">🐱 ?</span><span class="name">Jogo da memória</span><span class="sub">figura e palavra</span></button>
   </div>
 </section>
 <!-- Jogo: flashcards de números — a criança lê o número em voz alta e o reconhecedor de fala do navegador
@@ -435,6 +453,22 @@
     <p class="bol-fim-nivel" id="lei-fim-grupo"></p>
     <p class="bol-fim-pontos" id="lei-fim-pontos"></p>
     <div class="bol-fim-botoes"><button class="soft" id="lei-denovo">Jogar de novo</button><button class="soft" id="lei-proximo">Próximo grupo →</button></div>
+  </div>
+</section>
+<!-- Jogo da memória: 5 figuras com a palavra embaixo; depois de alguns segundos as figuras somem
+     e o app pergunta onde está a palavra -->
+<section id="jogo-memoria" class="jogo" hidden>
+  <div class="niveis" id="mem-grupos" aria-label="Grupo de palavras"></div>
+  <div class="jogo-board" id="mem-jogo">
+    <div class="mem-topo"><span id="mem-fase"></span><button class="soft" id="mem-pronto">Já memorizei ▶</button><button class="soft" id="mem-ouvir" hidden>🔊 Ouvir de novo</button></div>
+    <div class="mem-tempo" id="mem-tempo"><i id="mem-barra"></i></div>
+    <div class="mem-cartoes" id="mem-cartoes"></div>
+    <p class="lei-placar" id="mem-placar"></p>
+  </div>
+  <div class="jogo-board bol-fim" id="mem-fim" hidden>
+    <p class="bol-fim-nivel" id="mem-fim-grupo"></p>
+    <p class="bol-fim-pontos" id="mem-fim-pontos"></p>
+    <div class="bol-fim-botoes"><button class="soft" id="mem-denovo">Jogar de novo</button><button class="soft" id="mem-proximo">Próximo grupo →</button></div>
   </div>
 </section>
 <section id="jogo-pares" class="jogo" hidden>
@@ -1359,11 +1393,11 @@ function setKind(k, m = mode) {
 const KIND_NAMES = { numeros: "Números", letras: "Letras minúsculas", maiusculas: "Letras maiúsculas", cursiva: "Cursiva minúscula", cursivaMai: "Cursiva maiúscula", cursivaPal: "Palavras em cursiva", bastaoPal: "Palavras em letra bastão" };
 const inHome = () => document.body.classList.contains("home");
 function showHome(step = "kinds") {
-  clearTimeout(leiTimer);
+  clearTimeout(leiTimer); clearTimeout(memTimer); memFase = "";
   clearTimers(); resetTrace(); demo = null; status = "idle";
   if (window.speechSynthesis) speechSynthesis.cancel();
   document.body.classList.remove("em-jogo");
-  for (const id of ["jogo-pares", "jogo-bolinhas", "jogo-fono", "jogo-dois", "jogo-fala", "jogo-leitura"]) $(id).hidden = true;
+  for (const id of ["jogo-pares", "jogo-bolinhas", "jogo-fono", "jogo-dois", "jogo-fala", "jogo-leitura", "jogo-memoria"]) $(id).hidden = true;
   document.body.classList.remove("missao"); fonoMissao = false; try { fonoAudio && fonoAudio.pause(); } catch {} falaPara();
   document.body.classList.add("home");
   $("home").hidden = false;
@@ -1403,7 +1437,7 @@ function abrirJogo(id, titulo) {
   clearTimers(); resetTrace();
   document.body.classList.remove("home"); $("home").hidden = true;
   document.body.classList.add("em-jogo");
-  for (const j of ["jogo-pares", "jogo-bolinhas", "jogo-fono", "jogo-dois", "jogo-fala", "jogo-leitura"]) $(j).hidden = j !== id;
+  for (const j of ["jogo-pares", "jogo-bolinhas", "jogo-fono", "jogo-dois", "jogo-fala", "jogo-leitura", "jogo-memoria"]) $(j).hidden = j !== id;
   $("title").textContent = titulo; document.title = titulo;
 }
 
@@ -2152,6 +2186,85 @@ $("lei-denovo").onclick = () => leiComecar(leiG);
 $("lei-proximo").onclick = () => leiComecar(Math.min(leiG + 1, LEI_GRUPOS.length - 1));
 $("go-leitura").onclick = () => { abrirJogo("jogo-leitura", "Leitura de palavras"); leiComecar(leiG); };
 
+// Jogo da memória: os mesmos grupos da Leitura de palavras. As 5 figuras aparecem com a palavra embaixo
+// por MEM_SEGUNDOS (ou até tocar em "Já memorizei"); as figuras somem, ficam só as palavras, e o app pergunta
+// "Onde está a palavra …?" (mesmos áudios da leitura). Acertou: a figura volta. Figuras: Twemoji (icons/fono).
+const MEM_FIGURAS = { "PÉ": "1f9b6", "MÃO": "270b", "BOCA": "1f444", "OLHO": "1f441", "NARIZ": "1f443",
+  "CACHORRO": "1f436", "GATO": "1f431", "GALINHA": "1f414", "PORCO": "1f437", "CAVALO": "1f434",
+  "CAMA": "1f6cf", "TELEVISÃO": "1f4fa", "SOFÁ": "1f6cb", "PORTA": "1f6aa", "JANELA": "1fa9f",
+  "CARRO": "1f697", "BICICLETA": "1f6b2", "AVIÃO": "2708", "CAMINHÃO": "1f69a", "ÔNIBUS": "1f68c",
+  "PEIXE": "1f41f", "FORMIGA": "1f41c", "BORBOLETA": "1f98b", "COELHO": "1f430", "PASSARINHO": "1f426" };
+const MEM_KEY = "jogo-memoria-feitos", MEM_SEGUNDOS = 10;
+let memFeitos = new Set(lerJSON(MEM_KEY, [])), memG = 0, memFila = [], memErrouEsta = false, memPrimeira = 0, memTimer = null, memFase = "";
+const memFalar = () => memFila.length && leiSom(leiArquivo(memFila[0]) + "-pergunta", "Onde está a palavra " + memFila[0].toLowerCase() + "?");
+function memGrupos() {
+  const box = $("mem-grupos"); box.innerHTML = "";
+  LEI_GRUPOS.forEach((g, i) => {
+    const b = document.createElement("button"); b.className = "par-sons"; b.textContent = `${i + 1} · ${g.nome}`;
+    b.setAttribute("aria-current", String(i === memG)); b.classList.toggle("feito", memFeitos.has(i));
+    b.onclick = () => memComecar(i);
+    box.appendChild(b);
+  });
+  box.querySelector('[aria-current="true"]')?.scrollIntoView({ inline: "center", block: "nearest" });
+}
+function memComecar(i) {
+  clearTimeout(memTimer); memG = i; memPrimeira = 0; memErrouEsta = false; memFase = "memorizar";
+  const g = LEI_GRUPOS[i]; memFila = sortear(g.palavras);
+  $("mem-jogo").hidden = false; $("mem-fim").hidden = true; memGrupos();
+  const box = $("mem-cartoes"); box.innerHTML = ""; box.classList.add("memorizando");
+  for (const w of sortear(g.palavras)) {
+    const b = document.createElement("button"); b.dataset.palavra = w;
+    b.innerHTML = `<span class="fig"><img src="icons/fono/${MEM_FIGURAS[w]}.svg" alt=""><b>?</b></span><span class="pal">${w}</span>`;
+    b.onclick = () => memToque(b);
+    box.appendChild(b);
+  }
+  $("mem-fase").textContent = "Olhe bem as figuras e as palavras 👀";
+  $("mem-pronto").hidden = false; $("mem-ouvir").hidden = true; $("mem-tempo").style.visibility = "visible"; $("mem-placar").textContent = "";
+  const barra = $("mem-barra"); barra.style.transition = "none"; barra.style.transform = "scaleX(1)";
+  void barra.offsetWidth; barra.style.transition = `transform ${MEM_SEGUNDOS}s linear`; barra.style.transform = "scaleX(0)";
+  setMsg("Memorize! Depois as figuras vão sumir 🙈"); falaPt("Olhe bem as figuras!");
+  memTimer = setTimeout(memEsconder, MEM_SEGUNDOS * 1000);
+}
+function memEsconder() {
+  if (memFase !== "memorizar") return;
+  clearTimeout(memTimer); memFase = "perguntar";
+  const box = $("mem-cartoes"); box.classList.remove("memorizando");
+  box.querySelectorAll("button").forEach(b => b.classList.add("escondida"));
+  $("mem-fase").textContent = "Onde está a palavra…"; $("mem-pronto").hidden = true; $("mem-ouvir").hidden = false;
+  $("mem-tempo").style.visibility = "hidden"; memPlacar(); setMsg("Ouça e toque na palavra 👆");
+  memTimer = setTimeout(memFalar, 600);
+}
+function memPlacar() { const n = LEI_GRUPOS[memG].palavras.length; $("mem-placar").textContent = `${n - memFila.length} de ${n}`; }
+function memToque(b) {
+  if (memFase !== "perguntar" || !memFila.length) return;
+  clearTimeout(memTimer);
+  if (b.dataset.palavra !== memFila[0]) {
+    memErrouEsta = true; beep("erro");
+    b.classList.remove("treme"); void b.offsetWidth; b.classList.add("treme");
+    setMsg("Não é essa. Ouça de novo! 👂", "err");
+    memTimer = setTimeout(memFalar, 700); return;
+  }
+  b.classList.remove("escondida"); b.classList.add("certo"); if (!memErrouEsta) memPrimeira++;
+  memErrouEsta = false; memFila.shift(); memPlacar(); beep("ok");
+  setMsg("Isso! " + b.dataset.palavra + " ★", "ok"); leiSom(leiArquivo(b.dataset.palavra), b.dataset.palavra.toLowerCase());
+  if (memFila.length) { memTimer = setTimeout(memFalar, 1300); return; }
+  memFeitos.add(memG); gravarJSON(MEM_KEY, [...memFeitos]); memGrupos(); memFase = "fim";
+  memTimer = setTimeout(() => {
+    const n = LEI_GRUPOS[memG].palavras.length; beep("fim");
+    $("mem-jogo").hidden = true; $("mem-fim").hidden = false;
+    $("mem-fim-grupo").textContent = `Grupo ${memG + 1} · ${LEI_GRUPOS[memG].nome}`;
+    $("mem-fim-pontos").textContent = `${memPrimeira} de ${n} ★`;
+    $("mem-proximo").hidden = memG === LEI_GRUPOS.length - 1;
+    const txt = memPrimeira === n ? "Parabéns! Acertou todas de primeira!" : `Muito bem! Acertou ${memPrimeira} de primeira.`;
+    setMsg(txt, "ok"); falaPt(txt);
+  }, 1300);
+}
+$("mem-pronto").onclick = memEsconder;
+$("mem-ouvir").onclick = memFalar;
+$("mem-denovo").onclick = () => memComecar(memG);
+$("mem-proximo").onclick = () => memComecar(Math.min(memG + 1, LEI_GRUPOS.length - 1));
+$("go-memoria").onclick = () => { abrirJogo("jogo-memoria", "Jogo da memória"); memComecar(memG); };
+
 $("go-fala").onclick = () => { abrirJogo("jogo-fala", "Fale o número"); falaInicio(); };
 
 // ----- caneta -----
@@ -2395,10 +2508,11 @@ $("novo").onclick = () => {
   }
   clearTimeout(novoTimer); b.classList.remove("warn"); b.textContent = "Novo aluno";
   stars = {}; sheets = {}; save();
-  paresFeitos = new Set(); bolMelhor = {}; fonoFeitos = new Set(); doisFeitos = new Set(); falaMelhor = {}; gravarJSON(FALA_KEY, {}); leiFeitos = new Set(); gravarJSON(LEI_KEY, []); gravarJSON(PARES_KEY, []); gravarJSON(BOL_KEY, {}); gravarJSON(FONO_KEY, []); gravarJSON(DOIS_KEY, []); // jogos também recomeçam
+  paresFeitos = new Set(); bolMelhor = {}; fonoFeitos = new Set(); doisFeitos = new Set(); falaMelhor = {}; gravarJSON(FALA_KEY, {}); leiFeitos = new Set(); gravarJSON(LEI_KEY, []); memFeitos = new Set(); gravarJSON(MEM_KEY, []); gravarJSON(PARES_KEY, []); gravarJSON(BOL_KEY, {}); gravarJSON(FONO_KEY, []); gravarJSON(DOIS_KEY, []); // jogos também recomeçam
   if (!$("jogo-pares").hidden) paresNiveis();
   if (!$("bol-inicio").hidden) bolInicio();
   if (!$("jogo-leitura").hidden) leiGrupos();
+  if (!$("jogo-memoria").hidden) memGrupos();
   if (inHome() || document.body.classList.contains("em-jogo")) { b.textContent = "Zerado ✓"; novoTimer = setTimeout(() => { b.textContent = "Novo aluno"; }, 1500); return; }
   mode = "treino"; setMode("treino"); goTo(0);
 };

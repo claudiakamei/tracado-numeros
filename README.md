@@ -14,7 +14,7 @@ Letras: o desenho cinza é a fonte Comic Neue (versão livre no estilo Comic San
 
 Jogos: Encontre os pares (somas de 3 a 19, prepara a subtração), Fale o número (flashcards lidos em voz alta, conferidos pelo reconhecimento de fala do navegador — o áudio vai para o servidor do Google/Apple; nada é guardado no app), Pares e ímpares (contar de 2 em 2 escrevendo o número com a caneta; o número escrito é reconhecido por nuvem de pontos, método $P), Conta as bolinhas (fileiras de 5, como a folha Leitura de Bolinhas) e Sons das letras (consciência fonológica: ouvir o fonema, traçar a letra e achar as figuras que começam com o mesmo som, nos pares P/B, T/D, C/G, F/V, S/Z, X/J, M/N e L/R). Os sons dos fonemas (`audio/fonemas`) e os nomes em inglês (`audio/en`) foram gerados com as vozes do Windows (Maria e Zira).
 
-Figuras do jogo Sons das letras (`icons/fono`): [Twemoji](https://github.com/jdecked/twemoji), © Twitter/X e colaboradores, licença [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+Figuras dos jogos Sons das letras e Jogo da memória (`icons/fono`): [Twemoji](https://github.com/jdecked/twemoji), © Twitter/X e colaboradores, licença [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 Arquivos:
 - `index.html`: o aplicativo inteiro (desenhos, conferência do sentido e da ordem, tela).
