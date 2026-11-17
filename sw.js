@@ -15,6 +15,9 @@ const ARQUIVOS = [
   ...NOMES_EN,
   // sons das letras (fonemas); as figuras do jogo ficam guardadas na primeira vez que aparecem
   ..."pbtdcgfvszxjmnlr".split("").map((l) => `audio/fonemas/${l}.wav`),
+  // leitura de palavras: pergunta e palavra de cada cartão
+  ...["pe", "mao", "boca", "olho", "nariz", "cachorro", "gato", "galinha", "porco", "cavalo", "cama", "televisao", "sofa", "porta", "janela",
+    "carro", "bicicleta", "aviao", "caminhao", "onibus", "peixe", "formiga", "borboleta", "coelho", "passarinho"].flatMap((w) => [`audio/leitura/${w}.wav`, `audio/leitura/${w}-pergunta.wav`]),
 ];
 
 self.addEventListener("install", (e) => {

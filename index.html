@@ -2088,7 +2088,17 @@ const LEI_GRUPOS = [
 const LEI_KEY = "jogo-leitura-feitos";
 let leiFeitos = new Set(lerJSON(LEI_KEY, [])), leiG = 0, leiFila = [], leiErrouEsta = false, leiPrimeira = 0, leiTimer = null;
 const sortear = a => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
-const leiFalar = () => leiFila.length && falaPt("Onde está a palavra " + leiFila[0].toLowerCase() + "?");
+// áudios gravados com a voz Maria do Windows (audio/leitura), iguais em todos os aparelhos; a voz do tablet
+// lia "olho" aberto mesmo escrito "ôlho" (o áudio usa a pronúncia marcada ˈoʎu). Sem o arquivo, cai na voz do aparelho.
+const leiArquivo = w => w.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+let leiAudio = null;
+function leiSom(arquivo, reserva) {
+  if (!sound) return;
+  try { window.speechSynthesis && speechSynthesis.cancel(); if (leiAudio) leiAudio.pause(); } catch {}
+  leiAudio = new Audio(`audio/leitura/${arquivo}.wav`);
+  leiAudio.play().catch(() => falaPt(reserva));
+}
+const leiFalar = () => leiFila.length && leiSom(leiArquivo(leiFila[0]) + "-pergunta", "Onde está a palavra " + leiFila[0].toLowerCase() + "?");
 function leiGrupos() {
   const box = $("lei-grupos"); box.innerHTML = "";
   LEI_GRUPOS.forEach((g, i) => {
@@ -2124,7 +2134,7 @@ function leiToque(b) {
   }
   b.classList.add("certo"); if (!leiErrouEsta) leiPrimeira++;
   leiErrouEsta = false; leiFila.shift(); leiPlacar(); beep("ok");
-  setMsg("Isso! " + b.dataset.palavra + " ★", "ok"); falaPt(b.dataset.palavra.toLowerCase());
+  setMsg("Isso! " + b.dataset.palavra + " ★", "ok"); leiSom(leiArquivo(b.dataset.palavra), b.dataset.palavra.toLowerCase());
   if (leiFila.length) { leiTimer = setTimeout(leiFalar, 1300); return; }
   leiFeitos.add(leiG); gravarJSON(LEI_KEY, [...leiFeitos]); leiGrupos();
   leiTimer = setTimeout(() => {
