@@ -154,7 +154,7 @@
   .home-sub { position: relative; z-index: 1; margin: 4px 0 -6px; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.1rem, 2.6vw, 1.5rem); color: var(--muted); }
   #home-games { width: min(100%, 1100px); }
   @media (min-width: 1000px) { #home-games { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
-  .c6 { background: #d9822b; } .c7 { background: #2f8f9d; } .c8 { background: #6a8f1f; } .c9 { background: #b5651d; } .c10 { background: #3d7ea6; } .c11 { background: #8a3fa0; } .c12 { background: #c0392b; }
+  .c6 { background: #d9822b; } .c7 { background: #2f8f9d; } .c8 { background: #6a8f1f; } .c9 { background: #b5651d; } .c10 { background: #3d7ea6; } .c11 { background: #8a3fa0; } .c12 { background: #c0392b; } .c13 { background: #1f7a5a; }
   /* fale o número: cartão grande, microfone e o que o reconhecedor ouviu */
   .fala-modos { width: min(100%, 900px); margin: auto 0; display: grid; gap: 10px; }
   .fala-modos h3 { margin: 6px 0 0; font-family: var(--font-display); font-size: 1.2rem; color: var(--muted); }
@@ -251,6 +251,16 @@
   .bol-opcoes button.certo { background: var(--ok); border-color: var(--ok); color: #fff; }
   .bol-opcoes button.errado { background: var(--err-soft); border-color: var(--err); color: var(--err); }
   .bol-fim { text-align: center; margin: auto 0; max-width: 420px; }
+  /* Leitura de palavras: 5 cartões; o app fala uma palavra e a criança toca no cartão */
+  .lei-pergunta { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; font-weight: 800; color: var(--muted); }
+  .lei-pergunta button { font-size: 1.05rem; }
+  .lei-cartoes { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; padding: 10px 0; }
+  .lei-cartoes button { flex: 0 1 calc(50% - 8px); max-width: 320px; min-width: 150px; min-height: 130px; padding: 10px 8px; border: 3px solid var(--line); border-radius: 18px; background: var(--bg);
+    font-family: "Comic Neue", "Comic Sans MS", cursive; font-weight: 700; font-size: clamp(1.5rem, 4.6vw, 2.8rem); letter-spacing: 0.04em; color: var(--ink); white-space: nowrap; }
+  .lei-cartoes button.certo { border-color: var(--ok); background: var(--ok-soft); color: var(--ok); pointer-events: none; }
+  .lei-cartoes button.treme { animation: treme 0.35s; border-color: var(--err); background: var(--err-soft); }
+  .lei-placar { margin-top: 14px; text-align: center; font-weight: 800; color: var(--muted); }
+  @media (max-width: 640px) { .lei-cartoes { gap: 10px; } .lei-cartoes button { flex-basis: 100%; min-width: 0; min-height: 72px; font-size: 1.9rem; } }
   .bol-fim-nivel { margin: 0; font-weight: 800; color: var(--muted); }
   .bol-fim-pontos { margin: 6px 0 16px; font-family: var(--font-display); font-weight: 800; font-size: 3rem; }
   .bol-fim-botoes { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
@@ -355,6 +365,7 @@
     <button class="card c8" id="go-fono"><span class="glyph letra">f v</span><span class="name">Sons das letras</span><span class="sub">consciência fonológica</span></button>
     <button class="card c11" id="go-dois"><span class="glyph">2 4 6</span><span class="name">Pares e ímpares</span><span class="sub">contar de 2 em 2</span></button>
     <button class="card c12" id="go-fala"><span class="glyph">🎤 7</span><span class="name">Fale o número</span><span class="sub">flashcards de leitura</span></button>
+    <button class="card c13" id="go-leitura"><span class="glyph letra">GATO</span><span class="name">Leitura de palavras</span><span class="sub">ouça e toque na palavra</span></button>
   </div>
 </section>
 <!-- Jogo: flashcards de números — a criança lê o número em voz alta e o reconhecedor de fala do navegador
@@ -412,6 +423,20 @@
   <p class="fono-credito">Figuras: Twemoji (CC BY 4.0)</p>
 </section>
 <!-- Jogo: encontre os pares que somam o número-alvo (prepara a subtração: 11 − 2 = 9 porque 2 + 9 = 11) -->
+<!-- Jogo: leitura de palavras — o app fala uma palavra e a criança toca no cartão com ela escrita -->
+<section id="jogo-leitura" class="jogo" hidden>
+  <div class="niveis" id="lei-grupos" aria-label="Grupo de palavras"></div>
+  <div class="jogo-board" id="lei-jogo">
+    <div class="lei-pergunta"><span>Onde está a palavra…</span><button class="soft" id="lei-ouvir">🔊 Ouvir de novo</button></div>
+    <div class="lei-cartoes" id="lei-cartoes"></div>
+    <p class="lei-placar" id="lei-placar"></p>
+  </div>
+  <div class="jogo-board bol-fim" id="lei-fim" hidden>
+    <p class="bol-fim-nivel" id="lei-fim-grupo"></p>
+    <p class="bol-fim-pontos" id="lei-fim-pontos"></p>
+    <div class="bol-fim-botoes"><button class="soft" id="lei-denovo">Jogar de novo</button><button class="soft" id="lei-proximo">Próximo grupo →</button></div>
+  </div>
+</section>
 <section id="jogo-pares" class="jogo" hidden>
   <div class="niveis" id="pares-niveis" aria-label="Número-alvo"></div>
   <div class="jogo-board">
@@ -1334,10 +1359,11 @@ function setKind(k, m = mode) {
 const KIND_NAMES = { numeros: "Números", letras: "Letras minúsculas", maiusculas: "Letras maiúsculas", cursiva: "Cursiva minúscula", cursivaMai: "Cursiva maiúscula", cursivaPal: "Palavras em cursiva", bastaoPal: "Palavras em letra bastão" };
 const inHome = () => document.body.classList.contains("home");
 function showHome(step = "kinds") {
+  clearTimeout(leiTimer);
   clearTimers(); resetTrace(); demo = null; status = "idle";
   if (window.speechSynthesis) speechSynthesis.cancel();
   document.body.classList.remove("em-jogo");
-  for (const id of ["jogo-pares", "jogo-bolinhas", "jogo-fono", "jogo-dois", "jogo-fala"]) $(id).hidden = true;
+  for (const id of ["jogo-pares", "jogo-bolinhas", "jogo-fono", "jogo-dois", "jogo-fala", "jogo-leitura"]) $(id).hidden = true;
   document.body.classList.remove("missao"); fonoMissao = false; try { fonoAudio && fonoAudio.pause(); } catch {} falaPara();
   document.body.classList.add("home");
   $("home").hidden = false;
@@ -1377,7 +1403,7 @@ function abrirJogo(id, titulo) {
   clearTimers(); resetTrace();
   document.body.classList.remove("home"); $("home").hidden = true;
   document.body.classList.add("em-jogo");
-  for (const j of ["jogo-pares", "jogo-bolinhas", "jogo-fono", "jogo-dois", "jogo-fala"]) $(j).hidden = j !== id;
+  for (const j of ["jogo-pares", "jogo-bolinhas", "jogo-fono", "jogo-dois", "jogo-fala", "jogo-leitura"]) $(j).hidden = j !== id;
   $("title").textContent = titulo; document.title = titulo;
 }
 
@@ -2047,6 +2073,73 @@ $("fala-certo").onclick = () => falaMarca(true);
 $("fala-errado").onclick = () => { if (fala) fala.tentativas = Math.max(1, fala.tentativas); falaMarca(false); };
 $("fala-denovo").onclick = () => falaComecar(fala.m);
 $("fala-trocar").onclick = falaInicio;
+// Leitura de palavras: 5 cartões por grupo, em lugares sorteados; o app pergunta "Onde está a palavra …?"
+// numa ordem sorteada e a criança toca no cartão. Errou: o cartão treme e a palavra é falada de novo.
+// Conta quantas acertou de primeira; grupo terminado ganha ✓ (guardado no tablet, zera em Novo aluno).
+const LEI_GRUPOS = [
+  { nome: "Corpo", palavras: ["PÉ", "MÃO", "BOCA", "OLHO", "NARIZ"] },
+  { nome: "Animais", palavras: ["CACHORRO", "GATO", "GALINHA", "PORCO", "CAVALO"] },
+  { nome: "Casa", palavras: ["CAMA", "TELEVISÃO", "SOFÁ", "PORTA", "JANELA"] },
+  { nome: "Transportes", palavras: ["CARRO", "BICICLETA", "AVIÃO", "CAMINHÃO", "ÔNIBUS"] },
+  { nome: "Bichinhos", palavras: ["PEIXE", "FORMIGA", "BORBOLETA", "COELHO", "PASSARINHO"] },
+];
+const LEI_KEY = "jogo-leitura-feitos";
+let leiFeitos = new Set(lerJSON(LEI_KEY, [])), leiG = 0, leiFila = [], leiErrouEsta = false, leiPrimeira = 0, leiTimer = null;
+const sortear = a => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
+const leiFalar = () => leiFila.length && falaPt("Onde está a palavra " + leiFila[0].toLowerCase() + "?");
+function leiGrupos() {
+  const box = $("lei-grupos"); box.innerHTML = "";
+  LEI_GRUPOS.forEach((g, i) => {
+    const b = document.createElement("button"); b.className = "par-sons"; b.textContent = `${i + 1} · ${g.nome}`;
+    b.setAttribute("aria-current", String(i === leiG)); b.classList.toggle("feito", leiFeitos.has(i));
+    b.onclick = () => leiComecar(i);
+    box.appendChild(b);
+  });
+  box.querySelector('[aria-current="true"]')?.scrollIntoView({ inline: "center", block: "nearest" });
+}
+function leiComecar(i) {
+  clearTimeout(leiTimer); leiG = i; leiPrimeira = 0; leiErrouEsta = false;
+  const g = LEI_GRUPOS[i]; leiFila = sortear(g.palavras);
+  $("lei-jogo").hidden = false; $("lei-fim").hidden = true; leiGrupos();
+  const box = $("lei-cartoes"); box.innerHTML = "";
+  for (const w of sortear(g.palavras)) {
+    const b = document.createElement("button"); b.textContent = w; b.dataset.palavra = w;
+    b.onclick = () => leiToque(b);
+    box.appendChild(b);
+  }
+  leiPlacar(); setMsg("Ouça e toque na palavra 👆");
+  leiTimer = setTimeout(leiFalar, 500);
+}
+function leiPlacar() { const n = LEI_GRUPOS[leiG].palavras.length; $("lei-placar").textContent = `${n - leiFila.length} de ${n}`; }
+function leiToque(b) {
+  if (!leiFila.length) return;
+  clearTimeout(leiTimer);
+  if (b.dataset.palavra !== leiFila[0]) {
+    leiErrouEsta = true; beep("erro");
+    b.classList.remove("treme"); void b.offsetWidth; b.classList.add("treme");
+    setMsg("Não é essa. Ouça de novo! 👂", "err");
+    leiTimer = setTimeout(leiFalar, 700); return;
+  }
+  b.classList.add("certo"); if (!leiErrouEsta) leiPrimeira++;
+  leiErrouEsta = false; leiFila.shift(); leiPlacar(); beep("ok");
+  setMsg("Isso! " + b.dataset.palavra + " ★", "ok"); falaPt(b.dataset.palavra.toLowerCase());
+  if (leiFila.length) { leiTimer = setTimeout(leiFalar, 1300); return; }
+  leiFeitos.add(leiG); gravarJSON(LEI_KEY, [...leiFeitos]); leiGrupos();
+  leiTimer = setTimeout(() => {
+    const n = LEI_GRUPOS[leiG].palavras.length; beep("fim");
+    $("lei-jogo").hidden = true; $("lei-fim").hidden = false;
+    $("lei-fim-grupo").textContent = `Grupo ${leiG + 1} · ${LEI_GRUPOS[leiG].nome}`;
+    $("lei-fim-pontos").textContent = `${leiPrimeira} de ${n} ★`;
+    $("lei-proximo").hidden = leiG === LEI_GRUPOS.length - 1;
+    const txt = leiPrimeira === n ? "Parabéns! Acertou todas de primeira!" : `Muito bem! Acertou ${leiPrimeira} de primeira.`;
+    setMsg(txt, "ok"); falaPt(txt);
+  }, 1300);
+}
+$("lei-ouvir").onclick = leiFalar;
+$("lei-denovo").onclick = () => leiComecar(leiG);
+$("lei-proximo").onclick = () => leiComecar(Math.min(leiG + 1, LEI_GRUPOS.length - 1));
+$("go-leitura").onclick = () => { abrirJogo("jogo-leitura", "Leitura de palavras"); leiComecar(leiG); };
+
 $("go-fala").onclick = () => { abrirJogo("jogo-fala", "Fale o número"); falaInicio(); };
 
 // ----- caneta -----
@@ -2290,9 +2383,10 @@ $("novo").onclick = () => {
   }
   clearTimeout(novoTimer); b.classList.remove("warn"); b.textContent = "Novo aluno";
   stars = {}; sheets = {}; save();
-  paresFeitos = new Set(); bolMelhor = {}; fonoFeitos = new Set(); doisFeitos = new Set(); falaMelhor = {}; gravarJSON(FALA_KEY, {}); gravarJSON(PARES_KEY, []); gravarJSON(BOL_KEY, {}); gravarJSON(FONO_KEY, []); gravarJSON(DOIS_KEY, []); // jogos também recomeçam
+  paresFeitos = new Set(); bolMelhor = {}; fonoFeitos = new Set(); doisFeitos = new Set(); falaMelhor = {}; gravarJSON(FALA_KEY, {}); leiFeitos = new Set(); gravarJSON(LEI_KEY, []); gravarJSON(PARES_KEY, []); gravarJSON(BOL_KEY, {}); gravarJSON(FONO_KEY, []); gravarJSON(DOIS_KEY, []); // jogos também recomeçam
   if (!$("jogo-pares").hidden) paresNiveis();
   if (!$("bol-inicio").hidden) bolInicio();
+  if (!$("jogo-leitura").hidden) leiGrupos();
   if (inHome() || document.body.classList.contains("em-jogo")) { b.textContent = "Zerado ✓"; novoTimer = setTimeout(() => { b.textContent = "Novo aluno"; }, 1500); return; }
   mode = "treino"; setMode("treino"); goTo(0);
 };
