@@ -775,16 +775,17 @@ const CURSIVE_WORD_SET = CURSIVE_WORDS.map(buildCursiveWord);
 // Levanta a caneta entre uma letra e outra (os traços de uma mesma letra contínua continuam emendando).
 const LETRA_BASTAO = Object.fromEntries(LETTER_PATHS.map(([l, x0, width, strokes]) => [l, { x0, width, strokes }]));
 function buildPrintWord(word) {
-  const strokes = [], partes = []; let x = 0, x0 = 0;
+  const strokes = [], depois = [], partes = []; let x = 0, x0 = 0;
   for (const l of word) {
     const L = LETRA_BASTAO[l];
     if (!partes.length) x0 = L.x0;
     partes.push({ label: l, x });
-    L.strokes.forEach(raw => strokes.push(movePath(raw, x)));
+    // o pingo do i e do j fica para o fim, depois da palavra (também vale fazer logo depois da perninha)
+    L.strokes.forEach(raw => (buildStroke(raw).len < 4 ? depois : strokes).push(movePath(raw, x)));
     x += L.width;
   }
   return { label: word, id: "bastao-" + word, word: true, font: true, fontParts: partes, x0, width: x,
-    height: LETTER_FONT.height, cont: true, strokes: strokes.map(buildStroke) };
+    height: LETTER_FONT.height, cont: true, strokes: [...strokes, ...depois].map(buildStroke) };
 }
 const PRINT_WORD_SET = CURSIVE_WORDS.map(buildPrintWord);
 
@@ -899,6 +900,7 @@ let sheetCelebrated = false; // folha: já comemorou os 10 feitos (repetir um n�
 let shadows = [];           // traços seguintes acompanhados para conferir a ordem
 let bridge = null;          // traçado contínuo: passando de um traço para o próximo sem tirar a caneta
 let lifting = false;        // o traço já chegou na estrelinha; espera tirar a caneta
+let pingosFeitos = new Set(); // palavras: pingos do i e do j feitos antes da hora (vale a qualquer momento)
 const orderText = () => G[digitIdx] && G[digitIdx].word
   ? (!G[digitIdx].lined ? "Ordem errada! Siga os números das bolinhas ●"
     : strokeIdx === 0 ? "Comece na bolinha ● e siga a palavra até a estrelinha ★" : "Primeiro termine a palavra, depois o pingo e o corte do t ●")
@@ -1250,7 +1252,7 @@ function clearTimers() {
   if (raf) cancelAnimationFrame(raf);
   timer = raf = null;
 }
-function resetTrace() { track = null; pointerId = null; strokeIdx = 0; doneInk = []; ink = []; bridge = null; lifting = false; }
+function resetTrace() { track = null; pointerId = null; strokeIdx = 0; doneInk = []; ink = []; bridge = null; lifting = false; pingosFeitos = new Set(); }
 
 function startDemo() {
   if (mode !== "treino") return;
@@ -2100,6 +2102,16 @@ svg.addEventListener("pointerdown", e => {
     else if (hit !== digitIdx) { digitIdx = hit; resetTrace(); } // o que tinha começado no outro número fica para depois
   }
   const d = G[digitIdx], st = d.strokes[strokeIdx], lp = local(p);
+  // palavra: o pingo do i e do j vale a qualquer hora (logo depois da perninha ou no fim da palavra)
+  if (d.word) {
+    const aqui = track && track.s > 0 ? pointAt(st, track.s) : startOf(st);
+    const pingo = d.strokes.findIndex((o, k) => k > strokeIdx && isTap(o) && !pingosFeitos.has(k) &&
+      dist(lp, startOf(o)) <= tol().start && dist(lp, startOf(o)) < dist(lp, aqui));
+    if (pingo >= 0) {
+      pingosFeitos.add(pingo); doneInk.push([[p, { x: p.x + 0.5, y: p.y + 0.5 }]]); beep("ok");
+      setMsg(livre() ? "✏️" : "Muito bem! Continue ✏️"); render(); return;
+    }
+  }
   const res = beginTrack(st, lp, track, tol());
   // traços que vêm depois e começam aqui também (no 5 os dois traços saem da mesma bolinha)
   const later = d.strokes.slice(strokeIdx + 1).filter(o => typeof beginTrack(o, lp, null, tol()) !== "string");
@@ -2167,7 +2179,7 @@ svg.addEventListener("pointermove", e => {
     if (err && track.s >= st.len - 12) { lifting = true; setMsg("Muito bem! Agora tire a caneta da tela ✋"); continue; }
     if (err) { fail(ERROR_TEXT[err]); return; }
     // traçado contínuo: só depois de chegar mesmo no fim do traço
-    if (d.cont && strokeIdx < d.strokes.length - 1 && track.s >= st.len - 12) bridge = { last: null };
+    if (d.cont && strokeIdx < d.strokes.length - 1 && !isTap(d.strokes[strokeIdx + 1]) && track.s >= st.len - 12) bridge = { last: null };
   }
   render();
 });
@@ -2184,8 +2196,10 @@ function onUp(e) {
     status = "idle"; setMsg(livre() ? "Continue de onde parou" : "Continue de onde parou até a estrelinha ★"); render(); return;
   }
   doneInk.push(ink); ink = []; track = null;
-  if (strokeIdx < d.strokes.length - 1) {
-    strokeIdx++; status = "idle";
+  let prox = strokeIdx + 1;
+  while (pingosFeitos.has(prox)) prox++; // pingo já feito antes da hora
+  if (prox < d.strokes.length) {
+    strokeIdx = prox; status = "idle";
     setMsg(livre() ? "Muito bem! Agora o próximo traço" : d.word ? "Muito bem! Continue ✏️" : `Muito bem! Agora o traço ${strokeIdx + 1}: comece na bolinha ●`); beep("ok"); render(); return;
   }
   if (mode === "folha") return finishSheetDigit();
